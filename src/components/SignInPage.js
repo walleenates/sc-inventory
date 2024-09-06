@@ -1,4 +1,3 @@
-// src/components/SignInPage.js
 import React, { useState } from 'react';
 import { signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
 import { auth, googleProvider, facebookProvider } from '../firebase/firebase-config';
@@ -41,34 +40,59 @@ const SignInPage = () => {
 
   return (
     <div className="signin-container">
-      <h1>Sign In</h1>
-      <form onSubmit={handleSignIn}>
-        <div>
-          <label>Email:</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
+      <div className="signin-left">
+        <div className="logo-container">
+          <img src="/path/to/logo.png" alt="Logo" className="logo" />
+          <div className="system-name">SIMS</div>
         </div>
-        <div>
-          <label>Password:</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </div>
-        <button type="submit">Sign In</button>
-        <button type="button" onClick={handleGoogleSignIn}>Sign In with Google</button>
-        <button type="button" onClick={handleFacebookSignIn}>Sign In with Facebook</button>
-        {error && <p className="error">{error}</p>}
-      </form>
-      <div className="links">
-        <button onClick={() => navigate('/forgot-password')}>Forgot Password?</button>
-        <button onClick={() => navigate('/create-account')}>Create an Account</button>
+      </div>
+      <div className="signin-right">
+        <h2>Sign In</h2>
+        <form className="signin-form" onSubmit={handleSignIn}>
+          <div className="form-group">
+            <input
+              type="email"
+              id="email"
+              name="email"
+              placeholder="Enter your email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div className="form-group">
+            <input
+              type="password"
+              id="password"
+              name="password"
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          <div className="form-actions">
+            <a href="/forgot-password" className="forgot-password">Forgot Password?</a>
+          </div>
+          <button type="submit" className="login-button">Sign In</button>
+          <div className="or-container">
+            <span>or</span>
+          </div>
+          <div className="other-login-options">
+            <button type="button" className="google-signin" onClick={handleGoogleSignIn}>
+              <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google Logo" />
+              Sign in with Google
+            </button>
+            <button type="button" className="facebook-signin" onClick={handleFacebookSignIn}>
+              <img src="https://www.facebook.com/images/fb_icon_325x325.png" alt="Facebook Logo" />
+              Sign in with Facebook
+            </button>
+          </div>
+          <div className="new-account">
+            <span>New here? </span><a href="/create-account" className="create-account">Create an account</a>
+          </div>
+          {error && <p className="error">{error}</p>}
+        </form>
       </div>
     </div>
   );
