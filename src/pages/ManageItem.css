@@ -1,0 +1,70 @@
+/* src/pages/ManageItem.css */
+.manage-item-container {
+    padding: 20px;
+  }
+  
+  .add-item {
+    margin-bottom: 20px;
+  }
+  
+  .add-item input {
+    padding: 10px;
+    margin-right: 10px;
+  }
+  
+  .add-item button {
+    padding: 10px;
+  }
+  
+  .item-list {
+    margin-top: 20px;
+  }
+  
+  .item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  
+  .item button {
+    margin-left: 10px;
+    padding: 5px 10px;
+  }
+  
+  .edit-item input {
+    padding: 10px;
+    margin-right: 10px;
+  }
+  
+  .edit-item button {
+    padding: 5px 10px;
+  }
+  /* src/pages/ManageItem.css */
+.manage-item-container {
+    padding: 20px;
+  }
+  
+  h1 {
+    font-size: 24px;
+    color: #333;
+  }
+  
+  .item-list {
+    list-style-type: none;
+    padding: 0;
+  }
+  
+  .item {
+    border: 1px solid #ddd;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+  }
+  
+  .error-message {
+    color: red;
+    font-weight: bold;
+  }
+  
+  

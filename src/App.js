@@ -20,7 +20,7 @@ const App = () => {
         <Route path="/create-account" element={<CreateAccountPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
-        {/* Wrap routes that require the sidebar with the Layout */}
+        {/* Routes wrapped with Layout to include the sidebar */}
         <Route path="/dashboard" element={<Layout><DashboardPage /></Layout>} />
         <Route path="/manage-item" element={<Layout><ManageItem /></Layout>} />
         <Route path="/approve-request" element={<Layout><ApproveRequest /></Layout>} />
