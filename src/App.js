@@ -5,6 +5,12 @@ import SignInPage from './components/SignInPage';
 import CreateAccountPage from './components/CreateAccountPage';
 import ForgotPasswordPage from './components/ForgotPasswordPage';
 import DashboardPage from './components/DashboardPage';
+import ManageItem from './pages/ManageItem';
+import ApproveRequest from './pages/ApproveRequest';
+import Reports from './pages/Reports';
+import Scanner from './pages/Scanner';
+import Settings from './pages/Settings';
+import Layout from './layout/Layout'; // Import the Layout
 
 const App = () => {
   return (
@@ -13,8 +19,14 @@ const App = () => {
         <Route path="/" element={<SignInPage />} />
         <Route path="/create-account" element={<CreateAccountPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="/dashboard" element={<DashboardPage />} />
-        {/* Add additional routes here */}
+
+        {/* Wrap routes that require the sidebar with the Layout */}
+        <Route path="/dashboard" element={<Layout><DashboardPage /></Layout>} />
+        <Route path="/manage-item" element={<Layout><ManageItem /></Layout>} />
+        <Route path="/approve-request" element={<Layout><ApproveRequest /></Layout>} />
+        <Route path="/reports" element={<Layout><Reports /></Layout>} />
+        <Route path="/scanner" element={<Layout><Scanner /></Layout>} />
+        <Route path="/settings" element={<Layout><Settings /></Layout>} />
       </Routes>
     </Router>
   );
