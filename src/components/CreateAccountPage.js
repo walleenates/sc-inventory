@@ -1,6 +1,6 @@
 // src/components/CreateAccountPage.js
 import React, { useState } from 'react';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
 import { auth } from '../firebase/firebase-config';
 import { useNavigate } from 'react-router-dom';
 import './CreateAccountPage.css'; // Ensure you have the CSS file for styling
@@ -15,8 +15,13 @@ const CreateAccountPage = () => {
   const handleSignUp = async (e) => {
     e.preventDefault();
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
-      setSuccess('Account created successfully!');
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // Send a verification email
+      await sendEmailVerification(user);
+
+      setSuccess('Account created successfully! Please check your email to verify your account.');
       setError('');
       setTimeout(() => {
         navigate('/'); // Redirect to Sign In page after successful sign-up
