@@ -1,0 +1,53 @@
+/* src/components/SignInPage.css */
+.signin-container {
+    max-width: 400px;
+    margin: auto;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  .signin-container h1 {
+    text-align: center;
+  }
+  
+  .signin-container form {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .signin-container label {
+    margin: 10px 0 5px;
+  }
+  
+  .signin-container input {
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+  }
+  
+  .signin-container button {
+    padding: 10px;
+    background-color: #007bff;
+    border: none;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  .signin-container button:hover {
+    background-color: #0056b3;
+  }
+  
+  .signin-container .error {
+    color: red;
+    margin-top: 10px;
+  }
+  
+  .signin-container .links {
+    text-align: center;
+    margin-top: 20px;
+  }
+  
