@@ -1,6 +1,7 @@
-/* src/components/DashboardPage.css */
+/* General Dashboard Styles */
 .dashboard {
-  display: flex;
+  font-family: Arial, sans-serif;
+  padding: 20px;
 }
 
 .main-content {
@@ -9,6 +10,7 @@
   background-color: #f9f9f9;
 }
 
+/* Header Styles */
 header {
   display: flex;
   justify-content: space-between;
@@ -21,6 +23,7 @@ h2 {
   color: #333;
 }
 
+/* Search and Profile Styles */
 .search-and-profile {
   display: flex;
   align-items: center;
@@ -31,6 +34,8 @@ h2 {
   margin-right: 20px;
   border-radius: 5px;
   border: 1px solid #ccc;
+  font-size: 16px;
+  width: 300px; /* Adjust the width as needed */
 }
 
 .profile {
@@ -59,6 +64,7 @@ h2 {
   font-size: 14px;
 }
 
+/* Dropdown Menu Styles */
 .dropdown-menu {
   position: absolute;
   top: 100%;
@@ -86,18 +92,20 @@ h2 {
   background-color: #f1f1f1;
 }
 
+/* Cards Layout */
 .cards {
   display: flex;
+  flex-direction: column;
   gap: 20px;
-  margin-top: 20px;
 }
 
+/* Card Styles */
 .card {
-  background-color: white;
+  border: 1px solid #ddd;
   padding: 20px;
   border-radius: 8px;
+  background-color: white;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  width: 30%;
   text-align: center;
 }
 
@@ -108,4 +116,32 @@ h2 {
 .card p {
   font-size: 14px;
   color: #777;
+}
+
+/* Folder Card Styles */
+.folder-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.folder-card {
+  border: 1px solid #ccc;
+  padding: 10px;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+  cursor: pointer;
+}
+
+.folder-card h4 {
+  margin: 0;
+}
+
+/* Item List Styles */
+.item-list {
+  margin-top: 10px;
+  list-style-type: none;
+  padding: 0;
+  font-size: 14px;
+  color: #333;
 }

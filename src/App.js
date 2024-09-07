@@ -27,7 +27,10 @@ const App = () => {
         <Route path="/reports" element={<Layout><Reports /></Layout>} />
         <Route path="/scanner" element={<Layout><Scanner /></Layout>} />
         <Route path="/settings" element={<Layout><Settings /></Layout>} />
+        <Route path="/sign-in" element={<SignInPage />} />
+        
       </Routes>
+      
     </Router>
   );
 };

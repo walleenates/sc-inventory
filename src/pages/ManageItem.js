@@ -1,22 +1,30 @@
-// src/pages/ManageItem.js
 import React, { useState, useEffect } from 'react';
-import { db } from '../firebase/firebase-config'; // Import Firestore
+import { db } from '../firebase/firebase-config'; // Adjust the import path as needed
 import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot } from 'firebase/firestore';
-import './ManageItem.css'; // Ensure you have the CSS file for styling
+import { Timestamp } from 'firebase/firestore'; // Import Timestamp
+
+const colleges = ["CCS", "COC", "CED", "CBA", "BED", "COE"];
 
 const ManageItem = () => {
   const [items, setItems] = useState([]);
   const [newItem, setNewItem] = useState('');
   const [selectedCollege, setSelectedCollege] = useState('');
-  const [showList, setShowList] = useState(true);
-  const [editingItemId, setEditingItemId] = useState(null);
+  const [quantity, setQuantity] = useState(1);
+  const [editItem, setEditItem] = useState(null);
   const [editValue, setEditValue] = useState('');
+  const [editCollege, setEditCollege] = useState('');
+  const [editQuantity, setEditQuantity] = useState(1);
 
-  // Fetch items from Firestore
+  // State for handling folder visibility
+  const [visibleColleges, setVisibleColleges] = useState({});
+
   useEffect(() => {
     const itemsCollection = collection(db, 'items');
     const unsubscribe = onSnapshot(itemsCollection, (snapshot) => {
-      const fetchedItems = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const fetchedItems = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
       setItems(fetchedItems);
     });
 
@@ -24,30 +32,45 @@ const ManageItem = () => {
   }, []);
 
   const handleAddItem = async () => {
-    if (newItem.trim() && selectedCollege) {
+    if (newItem.trim() && selectedCollege && quantity > 0) {
       try {
-        await addDoc(collection(db, 'items'), { text: newItem.trim(), college: selectedCollege });
+        await addDoc(collection(db, 'items'), {
+          text: newItem.trim(),
+          college: selectedCollege,
+          quantity,
+          createdAt: Timestamp.now(), // Add timestamp for creation
+          updatedAt: Timestamp.now()  // Add timestamp for last update
+        });
         setNewItem('');
         setSelectedCollege('');
+        setQuantity(1);
       } catch (error) {
         console.error('Error adding document: ', error);
       }
     }
   };
 
-  const handleEditItem = (id) => {
-    const item = items.find(item => item.id === id);
-    setEditingItemId(id);
+  const handleEditItem = (item) => {
+    setEditItem(item);
     setEditValue(item.text);
+    setEditCollege(item.college);
+    setEditQuantity(item.quantity);
   };
 
   const handleSaveEdit = async () => {
-    if (editValue.trim() && editingItemId) {
+    if (editItem && editValue.trim() && editCollege && editQuantity > 0) {
       try {
-        const itemDoc = doc(db, 'items', editingItemId);
-        await updateDoc(itemDoc, { text: editValue.trim() });
-        setEditingItemId(null);
+        const itemDoc = doc(db, 'items', editItem.id);
+        await updateDoc(itemDoc, {
+          text: editValue.trim(),
+          college: editCollege,
+          quantity: editQuantity,
+          updatedAt: Timestamp.now() // Update timestamp
+        });
+        setEditItem(null);
         setEditValue('');
+        setEditCollege('');
+        setEditQuantity(1);
       } catch (error) {
         console.error('Error updating document: ', error);
       }
@@ -63,14 +86,34 @@ const ManageItem = () => {
     }
   };
 
-  const toggleListVisibility = () => {
-    setShowList(!showList);
+  // Toggle visibility of items in a folder
+  const toggleFolderVisibility = (college) => {
+    setVisibleColleges((prevState) => ({
+      ...prevState,
+      [college]: !prevState[college]
+    }));
   };
 
+  // Format timestamp
+  const formatTimestamp = (timestamp) => {
+    if (!timestamp) return 'Admin';
+    const date = timestamp.toDate();
+    return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`;
+  };
+
+  // Group items by college
+  const groupedItems = items.reduce((acc, item) => {
+    if (!acc[item.college]) {
+      acc[item.college] = [];
+    }
+    acc[item.college].push(item);
+    return acc;
+  }, {});
+
   return (
-    <div className="manage-item-container">
+    <div>
       <h1>Manage Items</h1>
-      <div className="add-item">
+      <div>
         <input
           type="text"
           value={newItem}
@@ -82,50 +125,76 @@ const ManageItem = () => {
           onChange={(e) => setSelectedCollege(e.target.value)}
         >
           <option value="">Select College</option>
-          <option value="CCS">CCS</option>
-          <option value="COC">COC</option>
-          <option value="CED">CED</option>
-          <option value="CBA">CBA</option>
-          <option value="BED">BED</option>
-          <option value="COE">COE</option>
+          {colleges.map(college => (
+            <option key={college} value={college}>{college}</option>
+          ))}
         </select>
-        <button onClick={handleAddItem} className="add-button">Add Item</button>
+        <input
+          type="number"
+          value={quantity}
+          onChange={(e) => setQuantity(parseInt(e.target.value))}
+          placeholder="Quantity"
+        />
+        <button onClick={handleAddItem}>Add Item</button>
       </div>
-      <button onClick={toggleListVisibility} className="toggle-button">
-        {showList ? 'Hide List' : 'Show List'}
-      </button>
-      {showList && (
-        <ul className="item-list">
-          {items.length > 0 ? (
-            items.map((item) => (
-              <li key={item.id} className="item">
-                {editingItemId === item.id ? (
-                  <div className="edit-container">
-                    <input
-                      type="text"
-                      value={editValue}
-                      onChange={(e) => setEditValue(e.target.value)}
-                    />
-                    <button onClick={handleSaveEdit} className="save-button">Save</button>
-                    <button onClick={() => setEditingItemId(null)} className="cancel-button">Cancel</button>
-                  </div>
-                ) : (
-                  <>
-                    <span className="item-text">{item.text}</span>
-                    <span className="item-college">({item.college})</span>
-                    <div className="item-actions">
-                      <button onClick={() => handleEditItem(item.id)} className="edit-button">Edit</button>
-                      <button onClick={() => handleDeleteItem(item.id)} className="delete-button">Delete</button>
-                    </div>
-                  </>
-                )}
-              </li>
-            ))
-          ) : (
-            <p>No items to display</p>
-          )}
-        </ul>
-      )}
+      <div>
+        {editItem && (
+          <div>
+            <input
+              type="text"
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              placeholder="Edit item"
+            />
+            <select
+              value={editCollege}
+              onChange={(e) => setEditCollege(e.target.value)}
+            >
+              <option value="">Select College</option>
+              {colleges.map(college => (
+                <option key={college} value={college}>{college}</option>
+              ))}
+            </select>
+            <input
+              type="number"
+              value={editQuantity}
+              onChange={(e) => setEditQuantity(parseInt(e.target.value))}
+              placeholder="Quantity"
+            />
+            <button onClick={handleSaveEdit}>Save</button>
+            <button onClick={() => setEditItem(null)}>Cancel</button>
+          </div>
+        )}
+      </div>
+      <div>
+        {Object.keys(groupedItems).length > 0 ? (
+          Object.keys(groupedItems).map(college => (
+            <div key={college}>
+              <h2 onClick={() => toggleFolderVisibility(college)} style={{ cursor: 'pointer' }}>
+                {college} ({groupedItems[college].length})
+              </h2>
+              {visibleColleges[college] && (
+                <ul>
+                  {groupedItems[college].map(item => (
+                    <li key={item.id}>
+                      <span>{item.text}</span>
+                      <span> (Quantity: {item.quantity})</span>
+                      <div>
+                        <span>Created: {formatTimestamp(item.createdAt)}</span>
+                        <span> | Updated: {formatTimestamp(item.updatedAt)}</span>
+                      </div>
+                      <button onClick={() => handleEditItem(item)}>Edit</button>
+                      <button onClick={() => handleDeleteItem(item.id)}>Delete</button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          ))
+        ) : (
+          <p>No items to display</p>
+        )}
+      </div>
     </div>
   );
 };
