@@ -162,7 +162,7 @@ const ManageItem = () => {
               placeholder="Quantity"
             />
             <button onClick={handleSaveEdit}>Save</button>
-            <button onClick={() => setEditItem(null)}>Cancel</button>
+            <button onClick={() => setEditItem(null)}>Done</button>
           </div>
         )}
       </div>
