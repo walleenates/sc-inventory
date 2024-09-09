@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { auth } from '../firebase/firebase-config'; // Adjust the import path as needed
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { db } from '../firebase/firebase-config'; // Adjust the import path as needed
 import './Dashboard.css'; // Ensure you have relevant styles in this file
@@ -11,13 +11,14 @@ const DashboardPage = () => {
   const [collegeItemCounts, setCollegeItemCounts] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCollege, setSelectedCollege] = useState(null);
+  const [approvedRequestsCount, setApprovedRequestsCount] = useState({});
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const navigate = useNavigate(); // Hook to programmatically navigate
   const userName = "Admin"; // Replace with dynamic user data if available
 
   useEffect(() => {
     const itemsCollection = collection(db, 'items');
-    const unsubscribe = onSnapshot(itemsCollection, (snapshot) => {
+    const unsubscribeItems = onSnapshot(itemsCollection, (snapshot) => {
       const items = snapshot.docs.map(doc => doc.data());
       setTotalItems(items.length);
 
@@ -32,7 +33,24 @@ const DashboardPage = () => {
       setCollegeItemCounts(collegeMap);
     });
 
-    return () => unsubscribe();
+    const requestsCollection = collection(db, 'requests');
+    const approvedRequestsQuery = query(requestsCollection, where('approved', '==', true));
+    const unsubscribeRequests = onSnapshot(approvedRequestsQuery, (snapshot) => {
+      const requests = snapshot.docs.map(doc => doc.data());
+      const collegeMap = requests.reduce((acc, request) => {
+        if (request.college) {
+          acc[request.college] = (acc[request.college] || 0) + request.itemCount;
+        }
+        return acc;
+      }, {});
+
+      setApprovedRequestsCount(collegeMap);
+    });
+
+    return () => {
+      unsubscribeItems();
+      unsubscribeRequests();
+    };
   }, []);
 
   const handleSearchChange = (event) => {
@@ -122,7 +140,10 @@ const DashboardPage = () => {
           </div>
           <div className="card approve-request-card">
             <h3>APPROVE PURCHASE REQUEST</h3>
-            <p>Placeholder for approve purchase request</p>
+            <p>Total Requested Items: {Object.values(approvedRequestsCount).reduce((a, b) => a + b, 0)}</p>
+            {Object.entries(approvedRequestsCount).map(([college, count]) => (
+              <p key={college}>{college}: {count} items</p>
+            ))}
           </div>
         </section>
       </main>

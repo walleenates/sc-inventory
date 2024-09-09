@@ -1,0 +1,62 @@
+/* src/components/ApproveRequest.css */
+.approve-request-container {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+  }
+  
+  .approve-request-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .approve-request-form label {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .approve-request-form input,
+  .approve-request-form select {
+    padding: 8px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+  }
+  
+  .approve-request-form button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    background-color: #007bff;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+  }
+  
+  .approve-request-form button:hover {
+    background-color: #0056b3;
+  }
+  
+  .submitted-requests {
+    margin-top: 20px;
+  }
+  
+  .submitted-requests ul {
+    list-style-type: none;
+    padding: 0;
+  }
+  
+  .submitted-requests li {
+    border: 1px solid #ddd;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    background-color: #f9f9f9;
+  }
+  
+  .request-image {
+    max-width: 100px;
+    height: auto;
+    display: block;
+    margin-top: 10px;
+  }
+  
