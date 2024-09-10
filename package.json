@@ -11,6 +11,7 @@
     "@testing-library/user-event": "^13.5.0",
     "@zxing/library": "^0.21.3",
     "firebase": "^10.13.1",
+    "jsbarcode": "^3.11.6",
     "react": "^18.3.1",
     "react-barcode-reader": "^0.0.2",
     "react-dom": "^18.3.1",

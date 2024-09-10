@@ -42,7 +42,7 @@ const SignInPage = () => {
     <div className="signin-container">
       <div className="signin-left">
         <div className="logo-container">
-          <img src="/path/to/logo.png" alt="Logo" className="logo" />
+          <img src="spclogo.png" alt="Logo" className="logo" />
           <div className="system-name">SIMS</div>
         </div>
       </div>
