@@ -1,0 +1,10 @@
+/* src/pages/Scanner.css */
+.scanner-container {
+  text-align: center;
+  padding: 20px;
+}
+
+.error {
+  color: red;
+  margin-top: 10px;
+}
