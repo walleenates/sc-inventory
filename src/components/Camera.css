@@ -1,0 +1,13 @@
+.camera-container {
+    text-align: center;
+    margin-top: 20px;
+  }
+  
+  video {
+    border: 1px solid #ccc;
+  }
+  
+  button {
+    margin: 10px;
+  }
+  

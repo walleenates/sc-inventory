@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { collection, addDoc, Timestamp, onSnapshot } from 'firebase/firestore';
+import { collection, addDoc, onSnapshot } from 'firebase/firestore'; // Removed Timestamp
 import { db, storage } from '../firebase/firebase-config'; // Adjust the import path as needed
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage'; // For image upload
 import './ApproveRequest.css'; // Ensure to create a CSS file for styling
 
+const categories = ["Equipment", "Office Supplies", "Books", "Electrical Parts"];
+
 const ApproveRequest = () => {
   const [requestDetails, setRequestDetails] = useState({
-    itemName: '',
+    itemName: '',       // Purpose of the Request
     itemCount: 1,
     college: '',
-    dateRequested: Timestamp.now(),
+    requestDate: '',    // Change dateRequested to requestDate for user input
     imageUrl: '',
+    category: '',       // New field for category
   });
   const [image, setImage] = useState(null);
   const [requests, setRequests] = useState([]); // Track all submitted requests
@@ -67,7 +70,7 @@ const ApproveRequest = () => {
           await addDoc(collection(db, 'requests'), {
             ...requestDetails,
             imageUrl: uploadedImageUrl,
-            dateRequested: Timestamp.now(),
+            requestDate: new Date(requestDetails.requestDate).getTime(), // Save as timestamp
             approved: true, // Automatically approve the request
           });
 
@@ -78,7 +81,7 @@ const ApproveRequest = () => {
       // If no image, submit request directly
       await addDoc(collection(db, 'requests'), {
         ...requestDetails,
-        dateRequested: Timestamp.now(),
+        requestDate: new Date(requestDetails.requestDate).getTime(), // Save as timestamp
         approved: true, // Automatically approve the request
       });
 
@@ -92,8 +95,9 @@ const ApproveRequest = () => {
       itemName: '',
       itemCount: 1,
       college: '',
-      dateRequested: Timestamp.now(),
+      requestDate: '', // Reset requestDate
       imageUrl: '',
+      category: '', // Reset category
     });
     setImage(null);
   };
@@ -104,7 +108,7 @@ const ApproveRequest = () => {
       <form className="approve-request-form" onSubmit={handleSubmit}>
         {/* Form Fields */}
         <label>
-          Item Name:
+          Purpose of the Request:
           <input
             type="text"
             name="itemName"
@@ -144,6 +148,34 @@ const ApproveRequest = () => {
         </label>
 
         <label>
+          Category:
+          <select
+            name="category"
+            value={requestDetails.category}
+            onChange={handleInputChange}
+            required
+          >
+            <option value="">Select Category</option>
+            {categories.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label>
+          Request Date:
+          <input
+            type="date"
+            name="requestDate"
+            value={requestDetails.requestDate}
+            onChange={handleInputChange}
+            required
+          />
+        </label>
+
+        <label>
           Upload Image (Optional):
           <input type="file" onChange={handleImageUpload} />
         </label>
@@ -157,9 +189,10 @@ const ApproveRequest = () => {
         <ul>
           {requests.map((request) => (
             <li key={request.id}>
-              <div><strong>Item:</strong> {request.itemName} ({request.itemCount})</div>
+              <div><strong>Purpose of the Request:</strong> {request.itemName} ({request.itemCount})</div>
               <div><strong>College:</strong> {request.college}</div>
-              <div><strong>Date Requested:</strong> {new Date(request.dateRequested.seconds * 1000).toLocaleDateString()}</div>
+              <div><strong>Category:</strong> {request.category}</div> {/* Display category */}
+              <div><strong>Date Requested:</strong> {new Date(request.requestDate).toLocaleDateString()}</div>
               {request.imageUrl && (
                 <div>
                   <strong>Image:</strong>

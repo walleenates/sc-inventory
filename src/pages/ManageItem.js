@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from "react";
-import { db } from "../firebase/firebase-config"; // Adjust the import path as needed
+// src/pages/ManageItem.js
+import React, { useState, useEffect, useRef } from 'react';
+import { db } from '../firebase/firebase-config';
 import {
   collection,
   addDoc,
@@ -7,10 +8,11 @@ import {
   deleteDoc,
   doc,
   onSnapshot,
-} from "firebase/firestore";
-import { Timestamp } from "firebase/firestore"; // Import Timestamp
-import JsBarcode from "jsbarcode"; // Import JsBarcode for barcode generation
-import "./ManageItem.css";
+} from 'firebase/firestore';
+import { Timestamp } from 'firebase/firestore';
+import JsBarcode from 'jsbarcode';
+import Camera from './Camera'; // Import the Camera component
+import './ManageItem.css';
 
 const colleges = ["CCS", "COC", "CED", "CBA", "BED", "COE"];
 const itemTypes = ["Equipment", "Office Supplies", "Books", "Electrical Parts"];
@@ -39,6 +41,7 @@ const ManageItem = () => {
   const [newItem, setNewItem] = useState("");
   const [selectedCollege, setSelectedCollege] = useState("");
   const [quantity, setQuantity] = useState(1);
+  const [amount, setAmount] = useState(0);
   const [requestedDate, setRequestedDate] = useState("");
   const [supplier, setSupplier] = useState("");
   const [itemType, setItemType] = useState("Equipment");
@@ -46,10 +49,12 @@ const ManageItem = () => {
   const [editValue, setEditValue] = useState("");
   const [editCollege, setEditCollege] = useState("");
   const [editQuantity, setEditQuantity] = useState(1);
+  const [editAmount, setEditAmount] = useState(0);
   const [editRequestedDate, setEditRequestedDate] = useState("");
   const [editSupplier, setEditSupplier] = useState("");
   const [editItemType, setEditItemType] = useState("Equipment");
-  const [image, setImage] = useState(null); // State to store image file
+  const [image, setImage] = useState(null);
+  const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [visibleColleges, setVisibleColleges] = useState({});
 
   useEffect(() => {
@@ -66,7 +71,7 @@ const ManageItem = () => {
   }, []);
 
   const generateBarcode = () => {
-    return `ITEM-${Math.random().toString(36).substr(2, 9)}`; // Example barcode generation
+    return `ITEM-${Math.random().toString(36).substr(2, 9)}`;
   };
 
   const handleAddItem = async () => {
@@ -74,31 +79,34 @@ const ManageItem = () => {
       newItem.trim() &&
       selectedCollege &&
       quantity > 0 &&
+      amount >= 0 &&
       requestedDate &&
       supplier &&
       itemType
     ) {
-      const newBarcode = generateBarcode(); // Generate a new barcode
+      const newBarcode = generateBarcode();
       try {
         await addDoc(collection(db, "items"), {
           text: newItem.trim(),
           college: selectedCollege,
           quantity,
+          amount,
           requestedDate: new Date(requestedDate),
           supplier,
           itemType,
-          barcode: newBarcode, // Add barcode
-          image: image, // Add image URL
-          createdAt: Timestamp.now(), // Add timestamp for creation
-          updatedAt: Timestamp.now(), // Add timestamp for last update
+          barcode: newBarcode,
+          image,
+          createdAt: Timestamp.now(),
+          updatedAt: Timestamp.now(),
         });
         setNewItem("");
         setSelectedCollege("");
         setQuantity(1);
+        setAmount(0);
         setRequestedDate("");
         setSupplier("");
         setItemType("Equipment");
-        setImage(null); // Reset image state
+        setImage(null);
       } catch (error) {
         console.error("Error adding document: ", error);
       }
@@ -110,12 +118,11 @@ const ManageItem = () => {
     setEditValue(item.text);
     setEditCollege(item.college);
     setEditQuantity(item.quantity);
-    setEditRequestedDate(
-      item.requestedDate.toDate().toISOString().substr(0, 10)
-    );
+    setEditAmount(item.amount);
+    setEditRequestedDate(item.requestedDate.toDate().toISOString().substr(0, 10));
     setEditSupplier(item.supplier);
     setEditItemType(item.itemType);
-    setImage(item.image); // Set image URL for editing
+    setImage(item.image);
   };
 
   const handleSaveEdit = async () => {
@@ -124,6 +131,7 @@ const ManageItem = () => {
       editValue.trim() &&
       editCollege &&
       editQuantity > 0 &&
+      editAmount >= 0 &&
       editRequestedDate &&
       editSupplier &&
       editItemType
@@ -134,20 +142,22 @@ const ManageItem = () => {
           text: editValue.trim(),
           college: editCollege,
           quantity: editQuantity,
+          amount: editAmount,
           requestedDate: new Date(editRequestedDate),
           supplier: editSupplier,
           itemType: editItemType,
-          image: image, // Update image URL
-          updatedAt: Timestamp.now(), // Update timestamp
+          image,
+          updatedAt: Timestamp.now(),
         });
         setEditItem(null);
         setEditValue("");
         setEditCollege("");
         setEditQuantity(1);
+        setEditAmount(0);
         setEditRequestedDate("");
         setEditSupplier("");
         setEditItemType("Equipment");
-        setImage(null); // Reset image state
+        setImage(null);
       } catch (error) {
         console.error("Error updating document: ", error);
       }
@@ -187,8 +197,13 @@ const ManageItem = () => {
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setImage(URL.createObjectURL(file)); // Create a local URL for the image
+      setImage(URL.createObjectURL(file));
     }
+  };
+
+  const handleCameraCapture = (imageUrl) => {
+    setImage(imageUrl);
+    setIsCameraOpen(false); // Close the camera after capturing
   };
 
   return (
@@ -215,8 +230,16 @@ const ManageItem = () => {
         <input
           type="number"
           value={quantity}
+          min="1"
           onChange={(e) => setQuantity(parseInt(e.target.value))}
           placeholder="Quantity"
+        />
+        <input
+          type="number"
+          value={amount}
+          min="0"
+          onChange={(e) => setAmount(parseFloat(e.target.value))}
+          placeholder="Amount"
         />
         <input
           type="date"
@@ -237,6 +260,7 @@ const ManageItem = () => {
           ))}
         </select>
         <input type="file" accept="image/*" onChange={handleImageUpload} />
+        <button onClick={() => setIsCameraOpen(true)}>Open Camera</button>
         <button onClick={handleAddItem}>Add Item</button>
       </div>
       <div>
@@ -252,7 +276,6 @@ const ManageItem = () => {
               value={editCollege}
               onChange={(e) => setEditCollege(e.target.value)}
             >
-              <option value="">Select College</option>
               {colleges.map((college) => (
                 <option key={college} value={college}>
                   {college}
@@ -262,8 +285,16 @@ const ManageItem = () => {
             <input
               type="number"
               value={editQuantity}
+              min="1"
               onChange={(e) => setEditQuantity(parseInt(e.target.value))}
               placeholder="Quantity"
+            />
+            <input
+              type="number"
+              value={editAmount}
+              min="0"
+              onChange={(e) => setEditAmount(parseFloat(e.target.value))}
+              placeholder="Amount"
             />
             <input
               type="date"
@@ -288,79 +319,37 @@ const ManageItem = () => {
             </select>
             <input type="file" accept="image/*" onChange={handleImageUpload} />
             <button onClick={handleSaveEdit}>Save</button>
-            <button onClick={() => setEditItem(null)}>Done</button>
+            <button onClick={() => setEditItem(null)}>Cancel</button>
           </div>
         )}
       </div>
-      <div className="item-list">
-        {Object.keys(groupedItems).length > 0 ? (
-          Object.keys(groupedItems).map((college) => (
-            <div key={college}>
-              <h2
-                className="folder-header"
-                onClick={() => toggleFolderVisibility(college)}
-              >
-                {college} ({groupedItems[college].length})
-              </h2>
-              {visibleColleges[college] && (
-                <ul>
-                  {groupedItems[college].map((item) => (
-                    <li key={item.id} className="item">
-                      <div className="item-details">
-                        <span>{item.text}</span>
-                        <span> (Quantity: {item.quantity})</span>
-                        <span>
-                          {" "}
-                          (Requested Date:{" "}
-                          {new Date(
-                            item.requestedDate.seconds * 1000
-                          ).toLocaleDateString()}
-                          )
-                        </span>
-                        <span> (Supplier: {item.supplier})</span>
-                        <span> (Type: {item.itemType})</span>
-                        <div>
-                          <span>
-                            Created: {formatTimestamp(item.createdAt)}
-                          </span>
-                          <span>
-                            {" "}
-                            | Updated: {formatTimestamp(item.updatedAt)}
-                          </span>
-                        </div>
-                        <div>
-                          <span>Barcode: {item.barcode}</span>
-                          <Barcode value={item.barcode} />{" "}
-                          {/* Render the barcode */}
-                        </div>
-                        {item.image && (
-                          <div>
-                            <img src={item.image} alt="Item" />
-                          </div>
-                        )}
-                      </div>
-                      <button
-                        className="edit-item-button"
-                        onClick={() => handleEditItem(item)}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        className="delete-item-button"
-                        onClick={() => handleDeleteItem(item.id)}
-                      >
-                        Delete
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          ))
-        ) : (
-          <p>No items to display</p>
-        )}
-      </div>
+      {Object.keys(groupedItems).map((college) => (
+        <div key={college}>
+          <h2 onClick={() => toggleFolderVisibility(college)}>
+            {college} ({groupedItems[college].length} items)
+          </h2>
+          {visibleColleges[college] &&
+            groupedItems[college].map((item) => (
+              <div key={item.id}>
+                <h3>
+                  {item.text} (Quantity: {item.quantity}, Amount: {item.amount})
+                </h3>
+                <p>
+                  Requested Date: {item.requestedDate ? new Date(item.requestedDate.seconds * 1000).toDateString() : "N/A"}
+                </p>
+                <p>Supplier: {item.supplier}</p>
+                <p>Type: {item.itemType}</p>
+                {item.barcode && <Barcode value={item.barcode} />}
+                {item.image && <img src={item.image} alt="Item" />}
+                <button onClick={() => handleEditItem(item)}>Edit</button>
+                <button onClick={() => handleDeleteItem(item.id)}>Delete</button>
+                <p>Created: {formatTimestamp(item.createdAt)}</p>
+                <p>Updated: {formatTimestamp(item.updatedAt)}</p>
+              </div>
+            ))}
+        </div>
+      ))}
+      {isCameraOpen && <Camera onCapture={handleCameraCapture} onClose={() => setIsCameraOpen(false)} />}
     </div>
   );
 };
