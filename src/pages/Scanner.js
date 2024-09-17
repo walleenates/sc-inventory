@@ -1,5 +1,5 @@
 import React from 'react';
-import Camera from './Camera'; // Adjust the path as needed
+import Camera from '../components/Camera'; // Adjust the path as needed
 
 const Scanner = () => {
   return (

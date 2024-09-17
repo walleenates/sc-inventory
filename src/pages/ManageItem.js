@@ -11,7 +11,7 @@ import {
 } from 'firebase/firestore';
 import { Timestamp } from 'firebase/firestore';
 import JsBarcode from 'jsbarcode';
-import Camera from './Camera'; // Import the Camera component
+import Camera from '../components/Camera'; // Import the Camera component
 import './ManageItem.css';
 
 const colleges = ["CCS", "COC", "CED", "CBA", "BED", "COE"];
@@ -56,6 +56,7 @@ const ManageItem = () => {
   const [image, setImage] = useState(null);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [visibleColleges, setVisibleColleges] = useState({});
+  const [saveOption, setSaveOption] = useState('local'); // Default save option
 
   useEffect(() => {
     const itemsCollection = collection(db, "items");
@@ -102,7 +103,7 @@ const ManageItem = () => {
         setNewItem("");
         setSelectedCollege("");
         setQuantity(1);
-        setAmount(0);
+        setAmount("");
         setRequestedDate("");
         setSupplier("");
         setItemType("Equipment");
@@ -200,11 +201,38 @@ const ManageItem = () => {
       setImage(URL.createObjectURL(file));
     }
   };
+  
+  const handleSaveOptionChange = (e) => {
+    setSaveOption(e.target.value);
+  };
 
   const handleCameraCapture = (imageUrl) => {
-    setImage(imageUrl);
+    // Function to handle the captured image based on the save option
+    if (saveOption === 'local') {
+      // Automatically download the image
+      const link = document.createElement('a');
+      link.href = imageUrl;
+      link.download = 'captured-image.png';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      alert("Image download initiated. The file will be saved to your default downloads folder.");
+    } else if (saveOption === 'system') {
+      // Pass the image to Firebase or another system
+      console.log("Image ready to be saved to the system.");
+      // Handle saving the image to Firebase or another storage system here
+      setImage(imageUrl); // Example for saving to state
+    } else {
+      alert("Invalid option. Please choose 'local' or 'system'.");
+    }
+  
     setIsCameraOpen(false); // Close the camera after capturing
   };
+  
+  
+  
+  
+  
 
   return (
     <div className="manage-item-container">
@@ -323,6 +351,17 @@ const ManageItem = () => {
           </div>
         )}
       </div>
+      
+      <div className="save-option">
+        <label>
+          Save Option:
+          <select value={saveOption} onChange={handleSaveOptionChange}>
+            <option value="local">Save to Local Storage</option>
+            <option value="system">Save to System</option>
+          </select>
+        </label>
+      </div>
+
       {Object.keys(groupedItems).map((college) => (
         <div key={college}>
           <h2 onClick={() => toggleFolderVisibility(college)}>
