@@ -1,4 +1,3 @@
-// src/pages/Reports.js
 import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase/firebase-config';
@@ -42,23 +41,28 @@ const Reports = () => {
   const groupItems = () => {
     const filteredItems = filterItems(items);
     const grouped = filteredItems.reduce((acc, item) => {
-      const key = item[groupBy] || 'Unknown';
+      const collegeKey = item.college || 'Unknown';
+      const categoryKey = item.itemType || 'Unknown Category';
 
-      if (!acc[key]) {
-        acc[key] = [];
+      if (!acc[collegeKey]) {
+        acc[collegeKey] = {};
       }
 
-      acc[key].push(item);
+      if (!acc[collegeKey][categoryKey]) {
+        acc[collegeKey][categoryKey] = [];
+      }
+
+      acc[collegeKey][categoryKey].push(item);
       return acc;
     }, {});
 
     return grouped;
   };
 
-  const handleToggleGroup = (key) => {
+  const handleToggleGroup = (collegeKey, categoryKey) => {
     setVisibleGroups((prev) => ({
       ...prev,
-      [key]: !prev[key],
+      [`${collegeKey}-${categoryKey}`]: !prev[`${collegeKey}-${categoryKey}`],
     }));
   };
 
@@ -85,28 +89,33 @@ const Reports = () => {
           </select>
         </label>
       </div>
-      {Object.keys(groupedItems).map((key) => (
-        <div key={key} className="report-section">
-          <h2>
-            <button onClick={() => handleToggleGroup(key)} className="toggle-button">
-              {visibleGroups[key] ? 'Hide' : ''} {key}
-            </button>
-          </h2>
-          {visibleGroups[key] && (
-            <ul>
-              {groupedItems[key].map((item) => (
-                <li key={item.id}>
-                  <div><strong>Item:</strong> {item.text}</div>
-                  <div><strong>Quantity:</strong> {item.quantity}</div>
-                  <div><strong>Amount:</strong> ${item.amount.toFixed(2)}</div>
-                  <div><strong>Requested Date:</strong> {new Date(item.requestedDate.seconds * 1000).toLocaleDateString()}</div>
-                  <div><strong>Supplier:</strong> {item.supplier}</div>
-                  <div><strong>Type:</strong> {item.itemType}</div>
-                  {item.image && <img src={item.image} alt="Item" className="report-image" />}
-                </li>
-              ))}
-            </ul>
-          )}
+      {Object.keys(groupedItems).map((collegeKey) => (
+        <div key={collegeKey} className="report-section">
+          <h2>{collegeKey}</h2>
+          {Object.keys(groupedItems[collegeKey]).map((categoryKey) => (
+            <div key={categoryKey}>
+              <h3>
+                <button onClick={() => handleToggleGroup(collegeKey, categoryKey)} className="toggle-button">
+                  {visibleGroups[`${collegeKey}-${categoryKey}`] ? 'Hide' : ''} {categoryKey}
+                </button>
+              </h3>
+              {visibleGroups[`${collegeKey}-${categoryKey}`] && (
+                <ul>
+                  {groupedItems[collegeKey][categoryKey].map((item) => (
+                    <li key={item.id}>
+                      <div><strong>Item:</strong> {item.text}</div>
+                      <div><strong>Quantity:</strong> {item.quantity}</div>
+                      <div><strong>Amount:</strong> ${item.amount.toFixed(2)}</div>
+                      <div><strong>Requested Date:</strong> {new Date(item.requestedDate.seconds * 1000).toLocaleDateString()}</div>
+                      <div><strong>Supplier:</strong> {item.supplier}</div>
+                      <div><strong>Type:</strong> {item.itemType}</div>
+                      {item.image && <img src={item.image} alt="Item" className="report-image" />}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          ))}
         </div>
       ))}
     </div>

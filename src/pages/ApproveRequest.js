@@ -3,6 +3,7 @@ import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot } from 'fireb
 import { db, storage } from '../firebase/firebase-config';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import Camera from '../components/Camera'; // Ensure this component is created
+import emailjs from 'emailjs-com'; // Import EmailJS
 import './ApproveRequest.css';
 
 const categories = ["Equipment", "Office Supplies", "Books", "Electrical Parts"];
@@ -15,11 +16,13 @@ const ApproveRequest = () => {
     requestDate: '',
     imageUrl: '',
     category: '',
+    requestorEmail: '', // Add a field for the requestor's email
   });
   const [image, setImage] = useState(null);
   const [requests, setRequests] = useState([]);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [editingRequest, setEditingRequest] = useState(null);
+  const [approvalDate, setApprovalDate] = useState(''); // State for approval date
 
   // Handle form input changes
   const handleInputChange = (e) => {
@@ -69,7 +72,7 @@ const ApproveRequest = () => {
         async () => {
           uploadedImageUrl = await getDownloadURL(uploadTask.snapshot.ref);
 
-          // Store the request in Firestore with the image URL and approved status
+          // Store the request in Firestore
           if (editingRequest) {
             // Update existing request
             const requestRef = doc(db, 'requests', editingRequest.id);
@@ -84,7 +87,7 @@ const ApproveRequest = () => {
               ...requestDetails,
               imageUrl: uploadedImageUrl,
               requestDate: new Date(requestDetails.requestDate).getTime(),
-              approved: true,
+              approved: false, // Initially not approved
             });
           }
 
@@ -105,7 +108,7 @@ const ApproveRequest = () => {
         await addDoc(collection(db, 'requests'), {
           ...requestDetails,
           requestDate: new Date(requestDetails.requestDate).getTime(),
-          approved: true,
+          approved: false, // Initially not approved
         });
       }
 
@@ -121,6 +124,7 @@ const ApproveRequest = () => {
       requestDate: '',
       imageUrl: '',
       category: '',
+      requestorEmail: '', // Reset the requestor's email
     });
     setImage(null);
     setEditingRequest(null);
@@ -149,6 +153,7 @@ const ApproveRequest = () => {
       requestDate: new Date(request.requestDate).toISOString().substring(0, 10),
       imageUrl: request.imageUrl,
       category: request.category,
+      requestorEmail: request.requestorEmail, // Set the email for editing
     });
     setEditingRequest(request);
   };
@@ -159,6 +164,42 @@ const ApproveRequest = () => {
     } catch (error) {
       console.error('Error deleting request:', error);
     }
+  };
+
+  const handleApprovalDateChange = (e) => {
+    setApprovalDate(e.target.value);
+  };
+
+  const handleAddApprovalDate = async (requestId) => {
+    try {
+      const requestRef = doc(db, 'requests', requestId);
+      await updateDoc(requestRef, {
+        approvalDate: new Date(approvalDate).getTime(), // Add approval date
+        approved: true, // Mark as approved
+      });
+
+      // Send email notification to requestor
+      await sendNotification(requestDetails.requestorEmail, approvalDate);
+
+      setApprovalDate(''); // Clear the approval date input
+    } catch (error) {
+      console.error('Error updating approval date:', error);
+    }
+  };
+
+  const sendNotification = (email, approvalDate) => {
+    const templateParams = {
+      to_email: email,
+      approval_date: approvalDate,
+    };
+
+    return emailjs.send('service_4nqmnnj', 'template_1yw0w9s', templateParams, 'r_Gc_TmxGbWOvqOYj')
+      .then((response) => {
+        console.log('Email sent successfully!', response.status, response.text);
+      })
+      .catch((error) => {
+        console.error('Failed to send email:', error);
+      });
   };
 
   return (
@@ -235,6 +276,17 @@ const ApproveRequest = () => {
         </label>
 
         <label>
+          Requestor's Email:
+          <input
+            type="email"
+            name="requestorEmail"
+            value={requestDetails.requestorEmail}
+            onChange={handleInputChange}
+            required
+          />
+        </label>
+
+        <label>
           Upload Image (Optional):
           <input type="file" onChange={handleImageUpload} />
           <button type="button" onClick={() => setIsCameraOpen(true)}>
@@ -243,36 +295,44 @@ const ApproveRequest = () => {
         </label>
 
         <button type="submit">{editingRequest ? 'Update Request' : 'Submit Request'}</button>
-        {editingRequest && <button type="button" onClick={resetForm}>Cancel</button>}
       </form>
 
-      {/* Display Submitted Requests */}
       <div className="submitted-requests">
         <h2>Submitted Requests</h2>
         <ul>
           {requests.map((request) => (
             <li key={request.id}>
-              <div><strong>Purpose of the Request:</strong> {request.itemName} ({request.itemCount})</div>
-              <div><strong>College:</strong> {request.college}</div>
-              <div><strong>Category:</strong> {request.category}</div>
-              <div><strong>Date Requested:</strong> {new Date(request.requestDate).toLocaleDateString()}</div>
-              {request.imageUrl && (
-                <div>
-                  <strong>Image:</strong>
-                  <img src={request.imageUrl} alt="Request item" className="request-image" />
-                </div>
-              )}
-              <div><strong>Status:</strong> {request.approved ? 'Approved' : 'Pending'}</div>
-              <button onClick={() => handleEdit(request)}>Edit</button>
-              <button onClick={() => handleDelete(request.id)}>Delete</button>
+              <div>
+                <h3>{request.itemName}</h3>
+                <p>Requested on: {new Date(request.requestDate).toLocaleDateString()}</p>
+                {request.approved && (
+                  <div>
+                    <p>Approved on: {new Date(request.approvalDate).toLocaleDateString()}</p>
+                  </div>
+                )}
+                {!request.approved && (
+                  <div>
+                    <label>
+                      Approval Date:
+                      <input
+                        type="date"
+                        value={approvalDate}
+                        onChange={handleApprovalDateChange}
+                      />
+                    </label>
+                    <button onClick={() => handleAddApprovalDate(request.id)}>Add Approval Date</button>
+                  </div>
+                )}
+                <button onClick={() => handleEdit(request)}>Edit</button>
+                <button onClick={() => handleDelete(request.id)}>Delete</button>
+              </div>
             </li>
           ))}
         </ul>
       </div>
 
-      {isCameraOpen && (
-        <Camera onCapture={handleCameraCapture} onClose={() => setIsCameraOpen(false)} />
-      )}
+      {/* Camera Component */}
+      {isCameraOpen && <Camera onCapture={handleCameraCapture} />}
     </div>
   );
 };
