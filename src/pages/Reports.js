@@ -1,108 +1,114 @@
+// src/pages/Reports.js
 import React, { useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { db } from '../firebase/firebase-config'; // Update the path as needed
-import './Reports.css'; // Ensure to use your CSS for styling
+import { collection, onSnapshot } from 'firebase/firestore';
+import { db } from '../firebase/firebase-config';
+import './Reports.css'; // Ensure to create a CSS file for styling
 
 const Reports = () => {
-  const [collegeFilter, setCollegeFilter] = useState('');
-  const [startDateFilter, setStartDateFilter] = useState('');
-  const [endDateFilter, setEndDateFilter] = useState('');
-  const [reportData, setReportData] = useState([]);
+  const [items, setItems] = useState([]);
+  const [groupBy, setGroupBy] = useState('college'); // Default grouping by college
+  const [searchQuery, setSearchQuery] = useState(''); // State for search query
+  const [visibleGroups, setVisibleGroups] = useState({}); // State for managing visible groups
 
   useEffect(() => {
-    const fetchData = async () => {
-      let itemsQuery = collection(db, 'items'); // Assumes your items are stored in the 'items' collection
-
-      // Apply college filter if selected
-      if (collegeFilter) {
-        itemsQuery = query(itemsQuery, where('college', '==', collegeFilter));
-      }
-
-      // Apply date range filter if both start and end dates are selected
-      if (startDateFilter && endDateFilter) {
-        itemsQuery = query(
-          itemsQuery,
-          where('dateRequested', '>=', new Date(startDateFilter)),
-          where('dateRequested', '<=', new Date(endDateFilter))
-        );
-      }
-
-      const unsubscribe = onSnapshot(itemsQuery, (snapshot) => {
-        const fetchedData = snapshot.docs.map((doc) => ({
+    const fetchItems = async () => {
+      const itemsCollection = collection(db, 'items');
+      const unsubscribe = onSnapshot(itemsCollection, (snapshot) => {
+        const fetchedItems = snapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
-        setReportData(fetchedData);
+        setItems(fetchedItems);
       });
 
       return () => unsubscribe();
     };
 
-    fetchData();
-  }, [collegeFilter, startDateFilter, endDateFilter]);
+    fetchItems();
+  }, []);
+
+  // Function to filter items based on the search query
+  const filterItems = (items) => {
+    return items.filter((item) => {
+      const lowerCaseQuery = searchQuery.toLowerCase();
+      return (
+        item.text.toLowerCase().includes(lowerCaseQuery) ||
+        item.college.toLowerCase().includes(lowerCaseQuery) ||
+        item.itemType.toLowerCase().includes(lowerCaseQuery)
+      );
+    });
+  };
+
+  const groupItems = () => {
+    const filteredItems = filterItems(items);
+    const grouped = filteredItems.reduce((acc, item) => {
+      const key = item[groupBy] || 'Unknown';
+
+      if (!acc[key]) {
+        acc[key] = [];
+      }
+
+      acc[key].push(item);
+      return acc;
+    }, {});
+
+    return grouped;
+  };
+
+  const handleToggleGroup = (key) => {
+    setVisibleGroups((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  };
+
+  const groupedItems = groupItems();
 
   return (
-    <div className="report-page">
-      <h1>Reports</h1>
-      <div className="filter-section">
-        <select
-          value={collegeFilter}
-          onChange={(e) => setCollegeFilter(e.target.value)}
-        >
-          <option value="">All Colleges</option>
-          <option value="CCS">CCS</option>
-          <option value="COC">COC</option>
-          <option value="CED">CED</option>
-          <option value="CBA">CBA</option>
-          <option value="BED">BED</option>
-          <option value="COE">COE</option>
-        </select>
-
+    <div className="reports-container">
+      <h1>Items Report</h1>
+      <div className="search-bar">
         <input
-          type="date"
-          value={startDateFilter}
-          onChange={(e) => setStartDateFilter(e.target.value)}
-          placeholder="Start Date"
+          type="text"
+          placeholder="Search by item, college, or category"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
         />
-
-        <input
-          type="date"
-          value={endDateFilter}
-          onChange={(e) => setEndDateFilter(e.target.value)}
-          placeholder="End Date"
-        />
-
-        <button onClick={() => { setCollegeFilter(''); setStartDateFilter(''); setEndDateFilter(''); }}>
-          Reset Filters
-        </button>
       </div>
-
-      <table className="report-table">
-        <thead>
-          <tr>
-            <th>Item Name</th>
-            <th>College</th>
-            <th>Quantity</th>
-            <th>Date Requested</th>
-          </tr>
-        </thead>
-        <tbody>
-          {reportData.length > 0 ? (
-            reportData.map((item) => (
-              <tr key={item.id}>
-                <td>{item.itemName || 'N/A'}</td>
-                <td>{item.college || 'N/A'}</td>
-                <td>{item.quantity || 'N/A'}</td>
-                <td>{item.dateRequested ? new Date(item.dateRequested.toDate()).toLocaleDateString() : 'N/A'}</td>
-              </tr>
-            ))
-          ) : (
-            <tr>
-              <td colSpan="4">No data available</td>
-            </tr>
+      <div className="group-by-selector">
+        <label>
+          Group by:
+          <select value={groupBy} onChange={(e) => setGroupBy(e.target.value)}>
+            <option value="college">College</option>
+            <option value="date">Date</option>
+            <option value="itemType">Category</option>
+          </select>
+        </label>
+      </div>
+      {Object.keys(groupedItems).map((key) => (
+        <div key={key} className="report-section">
+          <h2>
+            <button onClick={() => handleToggleGroup(key)} className="toggle-button">
+              {visibleGroups[key] ? 'Hide' : ''} {key}
+            </button>
+          </h2>
+          {visibleGroups[key] && (
+            <ul>
+              {groupedItems[key].map((item) => (
+                <li key={item.id}>
+                  <div><strong>Item:</strong> {item.text}</div>
+                  <div><strong>Quantity:</strong> {item.quantity}</div>
+                  <div><strong>Amount:</strong> ${item.amount.toFixed(2)}</div>
+                  <div><strong>Requested Date:</strong> {new Date(item.requestedDate.seconds * 1000).toLocaleDateString()}</div>
+                  <div><strong>Supplier:</strong> {item.supplier}</div>
+                  <div><strong>Type:</strong> {item.itemType}</div>
+                  {item.image && <img src={item.image} alt="Item" className="report-image" />}
+                </li>
+              ))}
+            </ul>
           )}
-        </tbody>
-      </table>
+        </div>
+      ))}
     </div>
   );
 };
