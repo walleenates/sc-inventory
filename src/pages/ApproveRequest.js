@@ -12,27 +12,24 @@ const colleges = ["Engineering", "Business", "Arts", "Sciences"];
 const ApproveRequest = () => {
   const [requestDetails, setRequestDetails] = useState({
     itemName: '',
-    itemCount: 1,
     college: '',
     requestDate: '',
     imageUrl: '',
     category: '',
+    uniqueId: '',
   });
   const [image, setImage] = useState(null);
   const [requests, setRequests] = useState([]);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [editingRequest, setEditingRequest] = useState(null);
   const [approvalDate, setApprovalDate] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
   // Handle form input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setRequestDetails((prev) => ({ ...prev, [name]: value }));
-  };
-
-  // Handle image selection
-  const handleImageUpload = (e) => {
-    setImage(e.target.files[0]);
+    setErrorMessage(''); // Clear error message on input change
   };
 
   // Fetch submitted requests from Firestore
@@ -52,6 +49,13 @@ const ApproveRequest = () => {
   // Form submission handling (create or update request)
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Check for unique request number
+    const isDuplicate = requests.some(request => request.uniqueId === requestDetails.uniqueId && request.id !== editingRequest?.id);
+    if (isDuplicate) {
+      setErrorMessage('Error: Request Number (Unique ID) must be unique.');
+      return;
+    }
 
     let uploadedImageUrl = '';
 
@@ -107,27 +111,27 @@ const ApproveRequest = () => {
   const resetForm = () => {
     setRequestDetails({
       itemName: '',
-      itemCount: 1,
       college: '',
       requestDate: '',
       imageUrl: '',
       category: '',
+      uniqueId: '',
     });
     setImage(null);
     setEditingRequest(null);
+    setErrorMessage(''); // Reset error message
   };
 
   // Sending email notification when the approval date is set
   const sendNotification = async (approvalDate, request) => {
     const templateParams = {
+      unique_id: request.uniqueId, // Add this line to include Unique ID
       college_requesting: request.college,
       purpose_of_request: request.itemName,
-      number_of_items: request.itemCount,
       category: request.category,
       request_date: new Date(request.requestDate).toLocaleDateString(),
       approval_date: new Date(approvalDate).toLocaleDateString(),
     };
-
     try {
       await emailjs.send('service_bl8cece', 'template_2914ned', templateParams, 'BMRt6JigJjznZL-FA');
       console.log('Email sent successfully!');
@@ -160,12 +164,13 @@ const ApproveRequest = () => {
     setEditingRequest(request);
     setRequestDetails({
       itemName: request.itemName,
-      itemCount: request.itemCount,
       college: request.college,
       requestDate: new Date(request.requestDate).toISOString().substring(0, 10),
       imageUrl: request.imageUrl,
       category: request.category,
+      uniqueId: request.uniqueId || '', // Populate uniqueId if available
     });
+    setImage(null); // Clear image when editing
   };
 
   // Handle deleting a request
@@ -178,13 +183,45 @@ const ApproveRequest = () => {
     }
   };
 
+  const handleImageCapture = (capturedImage) => {
+    if (capturedImage instanceof File || capturedImage instanceof Blob) {
+      setImage(capturedImage); // Ensure capturedImage is a valid File or Blob
+    } else {
+      console.error('Captured image is not a valid File or Blob:', capturedImage);
+    }
+    setIsCameraOpen(false); // Close camera after capturing the image
+  };
+  
+  // Handle image upload with proper type checking
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file && (file instanceof File || file instanceof Blob)) {
+      setImage(file); // Set image from file input
+    } else {
+      console.error('Uploaded image is not a valid File or Blob:', file);
+    }
+  };
+
   return (
     <div className="approve-request-container">
       <h1>{editingRequest ? 'Edit Purchase Request' : 'Submit Purchase Request'}</h1>
+      {errorMessage && <p className="error-message">{errorMessage}</p>}
       <form className="approve-request-form" onSubmit={handleSubmit}>
-        {/* Form Fields */}
+        {/* Request Number Input */}
         <label>
-          Purpose of the Request:
+          Request Number (Unique ID):
+          <input
+            type="text"
+            name="uniqueId"
+            value={requestDetails.uniqueId}
+            onChange={handleInputChange}
+            required
+          />
+        </label>
+
+        {/* Item Name Input */}
+        <label>
+          Purpose of the Request Item:
           <input
             type="text"
             name="itemName"
@@ -194,35 +231,23 @@ const ApproveRequest = () => {
           />
         </label>
 
+        {/* College Selection */}
         <label>
-          Number of Items:
-          <input
-            type="number"
-            name="itemCount"
-            min="1"
-            value={requestDetails.itemCount}
-            onChange={handleInputChange}
-            required
-          />
-        </label>
-
-        <label>
-          College Requesting:
+          College:
           <select
             name="college"
             value={requestDetails.college}
             onChange={handleInputChange}
             required
           >
-            <option value="">Select College</option>
-            {colleges.map((college) => (
-              <option key={college} value={college}>
-                {college}
-              </option>
+            <option value="">Select a college</option>
+            {colleges.map((college, index) => (
+              <option key={index} value={college}>{college}</option>
             ))}
           </select>
         </label>
 
+        {/* Category Selection */}
         <label>
           Category:
           <select
@@ -231,15 +256,14 @@ const ApproveRequest = () => {
             onChange={handleInputChange}
             required
           >
-            <option value="">Select Category</option>
-            {categories.map((cat) => (
-              <option key={cat} value={cat}>
-                {cat}
-              </option>
+            <option value="">Select a category</option>
+            {categories.map((category, index) => (
+              <option key={index} value={category}>{category}</option>
             ))}
           </select>
         </label>
 
+        {/* Request Date Input */}
         <label>
           Request Date:
           <input
@@ -251,62 +275,54 @@ const ApproveRequest = () => {
           />
         </label>
 
+        {/* Image Upload */}
         <label>
-          Upload Image (Optional):
-          <input type="file" onChange={handleImageUpload} />
-          <button type="button" onClick={() => setIsCameraOpen(true)}>
-            Capture Image
-          </button>
+          Upload Image:
+          <input type="file" accept="image/*" onChange={handleImageUpload} />
         </label>
 
+        {/* Capture Image Button */}
+        <button type="button" onClick={() => setIsCameraOpen(true)}>Capture Image</button>
+
+        {/* Submit Button */}
         <button type="submit">{editingRequest ? 'Update Request' : 'Submit Request'}</button>
       </form>
 
-      <div className="submitted-requests">
-        <h2>Submitted Requests</h2>
-        <ul>
-          {requests.map((request) => (
-            <li key={request.id}>
-              <div>
-                <p>Purpose: {request.itemName}</p>
-                <p>Requested on: {new Date(request.requestDate).toLocaleDateString()}</p>
-                <p>Category: {request.category}</p>
-                <p>College: {request.college}</p>
-                <p>Items: {request.itemCount}</p>
-                <p>
-                  Approved on:{' '}
-                  {request.approvalDate
-                    ? new Date(request.approvalDate).toLocaleDateString()
-                    : 'Not approved yet'}
-                </p>
-                <img src={request.imageUrl} alt={request.itemName} />
-
-                <button onClick={() => handleEdit(request)}>Edit</button>
-                <button onClick={() => handleDelete(request.id)}>Delete</button>
-
-                {!request.approved && (
-                  <div>
-                    <label>Approval Date:</label>
-                    <input
-                      type="date"
-                      value={approvalDate}
-                      onChange={(e) => setApprovalDate(e.target.value)}
-                    />
-                    <button onClick={() => handleAddApprovalDate(request.id)}>Set Approval Date</button>
-                  </div>
-                )}
-              </div>
-            </li>
-          ))}
-        </ul>
-      </div>
-
+      {/* Camera Component */}
       {isCameraOpen && (
-        <Camera onCapture={(imageSrc) => {
-          setImage(imageSrc);
-          setIsCameraOpen(false);
-        }} onClose={() => setIsCameraOpen(false)} />
+        <Camera onCapture={handleImageCapture} />
       )}
+
+      {/* Requests List */}
+      <h2>Submitted Requests</h2>
+      <ul>
+        {requests.map((request) => (
+          <li key={request.id}>
+            <div>
+              <h3>Request Number: {request.uniqueId}</h3> {/* Displaying Request Number */}
+              <h3>{request.itemName}</h3>
+              <p>College: {request.college}</p>
+              <p>Category: {request.category}</p>
+              <p>Request Date: {new Date(request.requestDate).toLocaleDateString()}</p>
+              {request.imageUrl && <img src={request.imageUrl} alt="Request" />}
+              {request.approved && <p>Approved on: {new Date(request.approvalDate).toLocaleDateString()}</p>}
+              <button onClick={() => handleEdit(request)}>Edit</button>
+              <button onClick={() => handleDelete(request.id)}>Delete</button>
+              {!request.approved && (
+                <div>
+                  <input
+                    type="date"
+                    value={approvalDate}
+                    onChange={(e) => setApprovalDate(e.target.value)}
+                    placeholder="Approval Date"
+                  />
+                  <button onClick={() => handleAddApprovalDate(request.id)}>Set Approval Date</button>
+                </div>
+              )}
+            </div>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 };
