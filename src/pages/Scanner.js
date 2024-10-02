@@ -141,8 +141,8 @@ const Scanner = () => {
           min="1"
           required
         />
-        <button type="submit" className="btn-scan">Submit</button>
-        <button type="button" onClick={handleSearchItem} className="btn-search">Search Item</button>
+        <button type="submit" className="btn-scan">Delete Items</button>
+        <button type="button" onClick={handleSearchItem} className="btn-search">Search Item</button> {/* Updated Button */}
       </form>
 
       {message && <p className="message">{message}</p>}
