@@ -141,8 +141,8 @@ const Scanner = () => {
           min="1"
           required
         />
-        <button type="submit" className="btn-scan">Delete Items</button>
-        <button type="button" onClick={handleSearchItem} className="btn-search">Search Item</button> {/* Updated Button */}
+        <button type="submit" className="btn-scan">Submit</button>
+        <button type="button" onClick={handleSearchItem} className="btn-search">Search Word</button>
       </form>
 
       {message && <p className="message">{message}</p>}
@@ -183,10 +183,15 @@ const Scanner = () => {
 
       {/* Search Result */}
       {searchResult && (
-        <div className="search-result">
-          <h2>Search Result</h2>
-          <p>{searchResult.text} - Barcode: {searchResult.barcode} - Quantity: {searchResult.quantity}</p>
-        </div>
+         <div className="search-result">
+         <h2>Search Result</h2>
+         <p><strong>College:</strong> {searchResult.college}</p> {/* College */}
+         <p><strong>Category:</strong> {searchResult.category}</p> {/* Category */}
+         <p><strong>Item Name:</strong> {searchResult.text}</p> {/* Item Name */}
+         <p><strong>Barcode:</strong> {searchResult.barcode}</p> {/* Barcode */}
+         <p><strong>Quantity:</strong> {searchResult.quantity}</p> {/* Quantity */}
+         <img src={searchResult.imageUrl} alt={searchResult.text} className="item-image" /> {/* Display item image */}
+       </div>
       )}
 
       {/* Toggle Items List */}
@@ -199,13 +204,20 @@ const Scanner = () => {
         <div className="items-list">
           <h2>All Items</h2>
           <ul>
-            {items.map(item => (
-              <li key={item.id}>
-                {item.text} - Barcode: {item.barcode} - Quantity: {item.quantity}
-                <button onClick={() => navigator.clipboard.writeText(item.barcode)} className="btn-copy-barcode">
-                  Copy Barcode
-                </button>
-              </li>
+          {items.map(item => (
+  <li key={item.id} className="item">
+    <img src={item.imageUrl} alt={item.text} className="item-image" /> {/* Display item image */}
+    <div className="item-details">
+      <p><strong>College:</strong> {item.college}</p> {/* College */}
+      <p><strong>Category:</strong> {item.category}</p> {/* Category */}
+      <p><strong>Item Name:</strong> {item.text}</p> {/* Item Name */}
+      <p><strong>Barcode:</strong> {item.barcode}</p> {/* Barcode */}
+      <p><strong>Quantity:</strong> {item.quantity}</p> {/* Quantity */}
+      <button onClick={() => navigator.clipboard.writeText(item.barcode)} className="btn-copy-barcode">
+        Copy Barcode
+      </button>
+    </div>
+  </li>
             ))}
           </ul>
         </div>
