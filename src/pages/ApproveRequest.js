@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, doc, deleteDoc, onSnapshot } from 'firebase/firestore';
 import { db, storage } from '../firebase/firebase-config';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import Camera from '../components/Camera'; // Ensure this component is created
-import emailjs from 'emailjs-com'; // Import EmailJS
+import Camera from '../components/Camera';
+import emailjs from 'emailjs-com';
 import './ApproveRequest.css';
 
 const categories = ["Equipment", "Office Supplies", "Books", "Electrical Parts"];
+const colleges = ["Engineering", "Business", "Arts", "Sciences"];
 
 const ApproveRequest = () => {
   const [requestDetails, setRequestDetails] = useState({
@@ -16,13 +17,12 @@ const ApproveRequest = () => {
     requestDate: '',
     imageUrl: '',
     category: '',
-    requestorEmail: '', // Add a field for the requestor's email
   });
   const [image, setImage] = useState(null);
   const [requests, setRequests] = useState([]);
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const [editingRequest, setEditingRequest] = useState(null);
-  const [approvalDate, setApprovalDate] = useState(''); // State for approval date
+  const [approvalDate, setApprovalDate] = useState('');
 
   // Handle form input changes
   const handleInputChange = (e) => {
@@ -49,14 +49,13 @@ const ApproveRequest = () => {
     return () => unsubscribe();
   }, []);
 
-  // Form submission handling
+  // Form submission handling (create or update request)
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     let uploadedImageUrl = '';
 
     if (image) {
-      // Upload image to Firebase Storage
       const storageRef = ref(storage, `requests/${image.name}`);
       const uploadTask = uploadBytesResumable(storageRef, image);
 
@@ -71,51 +70,40 @@ const ApproveRequest = () => {
         },
         async () => {
           uploadedImageUrl = await getDownloadURL(uploadTask.snapshot.ref);
-
-          // Store the request in Firestore
-          if (editingRequest) {
-            // Update existing request
-            const requestRef = doc(db, 'requests', editingRequest.id);
-            await updateDoc(requestRef, {
-              ...requestDetails,
-              imageUrl: uploadedImageUrl,
-              requestDate: new Date(requestDetails.requestDate).getTime(),
-            });
-          } else {
-            // Add new request
-            await addDoc(collection(db, 'requests'), {
-              ...requestDetails,
-              imageUrl: uploadedImageUrl,
-              requestDate: new Date(requestDetails.requestDate).getTime(),
-              approved: false, // Initially not approved
-            });
-          }
-
-          resetForm();
+          submitRequest(uploadedImageUrl);
         }
       );
     } else {
-      // If no image, submit request directly
-      if (editingRequest) {
-        // Update existing request
-        const requestRef = doc(db, 'requests', editingRequest.id);
-        await updateDoc(requestRef, {
-          ...requestDetails,
-          requestDate: new Date(requestDetails.requestDate).getTime(),
-        });
-      } else {
-        // Add new request
-        await addDoc(collection(db, 'requests'), {
-          ...requestDetails,
-          requestDate: new Date(requestDetails.requestDate).getTime(),
-          approved: false, // Initially not approved
-        });
-      }
-
-      resetForm();
+      submitRequest();
     }
   };
 
+  // Submitting the request (create or update)
+  const submitRequest = async (uploadedImageUrl = '') => {
+    try {
+      if (editingRequest) {
+        const requestRef = doc(db, 'requests', editingRequest.id);
+        await updateDoc(requestRef, {
+          ...requestDetails,
+          imageUrl: uploadedImageUrl || requestDetails.imageUrl,
+          requestDate: new Date(requestDetails.requestDate).getTime(),
+        });
+        setEditingRequest(null); // Reset after editing
+      } else {
+        await addDoc(collection(db, 'requests'), {
+          ...requestDetails,
+          imageUrl: uploadedImageUrl,
+          requestDate: new Date(requestDetails.requestDate).getTime(),
+          approved: false,
+        });
+      }
+      resetForm();
+    } catch (error) {
+      console.error('Error submitting request:', error);
+    }
+  };
+
+  // Reset form fields after submission
   const resetForm = () => {
     setRequestDetails({
       itemName: '',
@@ -124,28 +112,52 @@ const ApproveRequest = () => {
       requestDate: '',
       imageUrl: '',
       category: '',
-      requestorEmail: '', // Reset the requestor's email
     });
     setImage(null);
     setEditingRequest(null);
   };
 
-  const handleCameraCapture = async (imageUrl) => {
-    const response = await fetch(imageUrl);
-    const blob = await response.blob();
-    const storageRef = ref(storage, `requests/${Date.now()}.png`);
+  // Sending email notification when the approval date is set
+  const sendNotification = async (approvalDate, request) => {
+    const templateParams = {
+      college_requesting: request.college,
+      purpose_of_request: request.itemName,
+      number_of_items: request.itemCount,
+      category: request.category,
+      request_date: new Date(request.requestDate).toLocaleDateString(),
+      approval_date: new Date(approvalDate).toLocaleDateString(),
+    };
 
     try {
-      await uploadBytesResumable(storageRef, blob);
-      const downloadURL = await getDownloadURL(storageRef);
-      setRequestDetails((prev) => ({ ...prev, imageUrl: downloadURL }));
-      setIsCameraOpen(false);
+      await emailjs.send('service_bl8cece', 'template_2914ned', templateParams, 'BMRt6JigJjznZL-FA');
+      console.log('Email sent successfully!');
     } catch (error) {
-      console.error('Error uploading file:', error);
+      console.error('Failed to send email:', error);
     }
   };
 
+  // Handle adding approval date
+  const handleAddApprovalDate = async (requestId) => {
+    const requestToUpdate = requests.find(req => req.id === requestId);
+    
+    try {
+      const requestRef = doc(db, 'requests', requestId);
+      await updateDoc(requestRef, {
+        approvalDate: new Date(approvalDate).getTime(),
+        approved: true,
+      });
+
+      // Send notification with the request details
+      await sendNotification(approvalDate, requestToUpdate);
+      setApprovalDate('');
+    } catch (error) {
+      console.error('Error updating approval date:', error);
+    }
+  };
+
+  // Handle editing a request
   const handleEdit = (request) => {
+    setEditingRequest(request);
     setRequestDetails({
       itemName: request.itemName,
       itemCount: request.itemCount,
@@ -153,53 +165,17 @@ const ApproveRequest = () => {
       requestDate: new Date(request.requestDate).toISOString().substring(0, 10),
       imageUrl: request.imageUrl,
       category: request.category,
-      requestorEmail: request.requestorEmail, // Set the email for editing
     });
-    setEditingRequest(request);
   };
 
+  // Handle deleting a request
   const handleDelete = async (requestId) => {
     try {
       await deleteDoc(doc(db, 'requests', requestId));
+      console.log('Request deleted successfully!');
     } catch (error) {
       console.error('Error deleting request:', error);
     }
-  };
-
-  const handleApprovalDateChange = (e) => {
-    setApprovalDate(e.target.value);
-  };
-
-  const handleAddApprovalDate = async (requestId) => {
-    try {
-      const requestRef = doc(db, 'requests', requestId);
-      await updateDoc(requestRef, {
-        approvalDate: new Date(approvalDate).getTime(), // Add approval date
-        approved: true, // Mark as approved
-      });
-
-      // Send email notification to requestor
-      await sendNotification(requestDetails.requestorEmail, approvalDate);
-
-      setApprovalDate(''); // Clear the approval date input
-    } catch (error) {
-      console.error('Error updating approval date:', error);
-    }
-  };
-
-  const sendNotification = (email, approvalDate) => {
-    const templateParams = {
-      to_email: email,
-      approval_date: approvalDate,
-    };
-
-    return emailjs.send('service_4nqmnnj', 'template_1yw0w9s', templateParams, 'r_Gc_TmxGbWOvqOYj')
-      .then((response) => {
-        console.log('Email sent successfully!', response.status, response.text);
-      })
-      .catch((error) => {
-        console.error('Failed to send email:', error);
-      });
   };
 
   return (
@@ -239,11 +215,11 @@ const ApproveRequest = () => {
             required
           >
             <option value="">Select College</option>
-            <option value="Engineering">Engineering</option>
-            <option value="Business">Business</option>
-            <option value="Arts">Arts</option>
-            <option value="Sciences">Sciences</option>
-            {/* Add more colleges as needed */}
+            {colleges.map((college) => (
+              <option key={college} value={college}>
+                {college}
+              </option>
+            ))}
           </select>
         </label>
 
@@ -276,17 +252,6 @@ const ApproveRequest = () => {
         </label>
 
         <label>
-          Requestor's Email:
-          <input
-            type="email"
-            name="requestorEmail"
-            value={requestDetails.requestorEmail}
-            onChange={handleInputChange}
-            required
-          />
-        </label>
-
-        <label>
           Upload Image (Optional):
           <input type="file" onChange={handleImageUpload} />
           <button type="button" onClick={() => setIsCameraOpen(true)}>
@@ -303,36 +268,45 @@ const ApproveRequest = () => {
           {requests.map((request) => (
             <li key={request.id}>
               <div>
-                <h3>{request.itemName}</h3>
+                <p>Purpose: {request.itemName}</p>
                 <p>Requested on: {new Date(request.requestDate).toLocaleDateString()}</p>
-                {request.approved && (
-                  <div>
-                    <p>Approved on: {new Date(request.approvalDate).toLocaleDateString()}</p>
-                  </div>
-                )}
-                {!request.approved && (
-                  <div>
-                    <label>
-                      Approval Date:
-                      <input
-                        type="date"
-                        value={approvalDate}
-                        onChange={handleApprovalDateChange}
-                      />
-                    </label>
-                    <button onClick={() => handleAddApprovalDate(request.id)}>Add Approval Date</button>
-                  </div>
-                )}
+                <p>Category: {request.category}</p>
+                <p>College: {request.college}</p>
+                <p>Items: {request.itemCount}</p>
+                <p>
+                  Approved on:{' '}
+                  {request.approvalDate
+                    ? new Date(request.approvalDate).toLocaleDateString()
+                    : 'Not approved yet'}
+                </p>
+                <img src={request.imageUrl} alt={request.itemName} />
+
                 <button onClick={() => handleEdit(request)}>Edit</button>
                 <button onClick={() => handleDelete(request.id)}>Delete</button>
+
+                {!request.approved && (
+                  <div>
+                    <label>Approval Date:</label>
+                    <input
+                      type="date"
+                      value={approvalDate}
+                      onChange={(e) => setApprovalDate(e.target.value)}
+                    />
+                    <button onClick={() => handleAddApprovalDate(request.id)}>Set Approval Date</button>
+                  </div>
+                )}
               </div>
             </li>
           ))}
         </ul>
       </div>
 
-      {/* Camera Component */}
-      {isCameraOpen && <Camera onCapture={handleCameraCapture} />}
+      {isCameraOpen && (
+        <Camera onCapture={(imageSrc) => {
+          setImage(imageSrc);
+          setIsCameraOpen(false);
+        }} onClose={() => setIsCameraOpen(false)} />
+      )}
     </div>
   );
 };
