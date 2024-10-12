@@ -1,24 +1,21 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { db } from '../firebase/firebase-config';
 import { collection, getDocs, updateDoc, deleteDoc, doc } from 'firebase/firestore';
-import Webcam from 'react-webcam'; // For camera access
-import { BrowserMultiFormatReader } from '@zxing/library'; // For barcode scanning
-import './Scanner.css'; // Assuming you're using CSS for styling
-
+import Webcam from 'react-webcam';
+import { BrowserMultiFormatReader } from '@zxing/library';
+import JsBarcode from 'jsbarcode'; // Import JsBarcode for generating barcodes
+import './Scanner.css';
 const Scanner = () => {
   const [barcodeInput, setBarcodeInput] = useState('');
   const [quantityInput, setQuantityInput] = useState(1);
   const [items, setItems] = useState([]);
   const [message, setMessage] = useState('');
   const [cameraEnabled, setCameraEnabled] = useState(false);
-  const [devices, setDevices] = useState([]); // List of available cameras
-  const [selectedDeviceId, setSelectedDeviceId] = useState(''); // Selected camera device
-  const [showItems, setShowItems] = useState(false); // Toggle for showing items list
-  const [searchResult, setSearchResult] = useState(null); // Store search result
+  const [devices, setDevices] = useState([]);
+  const [selectedDeviceId, setSelectedDeviceId] = useState('');
   const webcamRef = useRef(null);
   const codeReader = useRef(new BrowserMultiFormatReader());
 
-  // Fetch items from Firestore
   const fetchItems = async () => {
     const itemsCollection = collection(db, 'items');
     const itemSnapshot = await getDocs(itemsCollection);
@@ -27,24 +24,22 @@ const Scanner = () => {
   };
 
   useEffect(() => {
-    fetchItems(); // Fetch items when the component mounts
+    fetchItems();
   }, []);
 
-  // Fetch available cameras
   const getAvailableDevices = async () => {
     const devices = await navigator.mediaDevices.enumerateDevices();
     const videoDevices = devices.filter(device => device.kind === 'videoinput');
     setDevices(videoDevices);
     if (videoDevices.length > 0) {
-      setSelectedDeviceId(videoDevices[0].deviceId); // Default to the first camera
+      setSelectedDeviceId(videoDevices[0].deviceId);
     }
   };
 
   useEffect(() => {
-    getAvailableDevices(); // Fetch available cameras on component mount
+    getAvailableDevices();
   }, []);
 
-  // Handle barcode submission manually
   const handleBarcodeSubmit = async (e) => {
     e.preventDefault();
     const item = items.find(item => item.barcode === barcodeInput);
@@ -71,61 +66,58 @@ const Scanner = () => {
 
     setBarcodeInput('');
     setQuantityInput(1);
-    await fetchItems(); // Re-fetch items to update the list
+    await fetchItems();
   };
 
-  // Function to delete an item from the database
   const deleteItem = async (itemDoc) => {
     await deleteDoc(itemDoc);
   };
 
-  // Handle barcode scanning from the camera
   const handleScanFromCamera = useCallback(() => {
-    if (webcamRef.current && cameraEnabled) {
-      // Start scanning from the camera
+    if (webcamRef.current) {
       codeReader.current.decodeFromVideoDevice(selectedDeviceId, webcamRef.current.video, (result, err) => {
         if (result) {
           setBarcodeInput(result.text);
-          setMessage(`Scanned Barcode: ${result.text}`);
-          setCameraEnabled(false); // Stop the camera after successful scan
-        } else if (err && err.name !== 'NotFoundException') {
-          console.error(err); // Log errors except "NotFoundException"
+          setCameraEnabled(false);
+        }
+        if (err) {
+          console.log(err);
         }
       });
     }
-  }, [selectedDeviceId, cameraEnabled]);
+  }, [selectedDeviceId, webcamRef]);
 
   useEffect(() => {
     if (cameraEnabled) {
       handleScanFromCamera();
     } else {
-      codeReader.current.reset(); // Stop barcode scanning if camera is disabled
+      codeReader.current.reset();
     }
   }, [cameraEnabled, handleScanFromCamera]);
 
-  // Function to search for an item by barcode
-  const handleSearchItem = () => {
-    const item = items.find(item => item.barcode === barcodeInput);
-    if (item) {
-      setSearchResult(item);
-      setMessage('');
-    } else {
-      setSearchResult(null);
-      setMessage('Item not found.');
+  // Function to render barcodes using JsBarcode
+  const renderBarcode = (barcode, elementId) => {
+    if (barcode) {
+      JsBarcode(`#${elementId}`, barcode, {
+        format: "CODE128",
+        lineColor: "#000",
+        width: 2,
+        height: 50,
+        displayValue: false
+      });
     }
   };
 
-  // Toggle visibility of items list
-  const toggleShowItems = () => {
-    setShowItems(!showItems);
-  };
+  useEffect(() => {
+    items.forEach(item => {
+      renderBarcode(item.barcode, `barcode-${item.id}`);
+    });
+  }, [items]);
 
   return (
-    <div className="scanner-container">
+    <div>
       <h1>Scanner</h1>
-
-      {/* Manual Barcode Input */}
-      <form onSubmit={handleBarcodeSubmit} className="barcode-form">
+      <form onSubmit={handleBarcodeSubmit}>
         <input
           type="text"
           value={barcodeInput}
@@ -141,20 +133,17 @@ const Scanner = () => {
           min="1"
           required
         />
-        <button type="submit" className="btn-scan">Submit</button>
-        <button type="button" onClick={handleSearchItem} className="btn-search">Search Word</button>
+        <button type="submit">Submit</button>
       </form>
 
       {message && <p className="message">{message}</p>}
 
-      {/* Toggle Camera */}
-      <button onClick={() => setCameraEnabled(!cameraEnabled)} className="btn-toggle-camera">
+      <button onClick={() => setCameraEnabled(!cameraEnabled)}>
         {cameraEnabled ? 'Stop Camera' : 'Scan Barcode with Camera'}
       </button>
 
-      {/* Select Camera Dropdown */}
       {devices.length > 0 && (
-        <div className="camera-select">
+        <div>
           <label>Select Camera: </label>
           <select
             value={selectedDeviceId}
@@ -169,59 +158,21 @@ const Scanner = () => {
         </div>
       )}
 
-      {/* Camera Preview */}
       {cameraEnabled && (
-        <div className="camera-preview">
-          <Webcam
-            ref={webcamRef}
-            width="300"
-            height="200"
-            videoConstraints={{ deviceId: selectedDeviceId }}
-          />
+        <div>
+          <Webcam ref={webcamRef} width="300" height="200" videoConstraints={{ deviceId: selectedDeviceId }} />
         </div>
       )}
 
-      {/* Search Result */}
-      {searchResult && (
-         <div className="search-result">
-         <h2>Search Result</h2>
-         <p><strong>College:</strong> {searchResult.college}</p> {/* College */}
-         <p><strong>Category:</strong> {searchResult.category}</p> {/* Category */}
-         <p><strong>Item Name:</strong> {searchResult.text}</p> {/* Item Name */}
-         <p><strong>Barcode:</strong> {searchResult.barcode}</p> {/* Barcode */}
-         <p><strong>Quantity:</strong> {searchResult.quantity}</p> {/* Quantity */}
-         <img src={searchResult.imageUrl} alt={searchResult.text} className="item-image" /> {/* Display item image */}
-       </div>
-      )}
-
-      {/* Toggle Items List */}
-      <button onClick={toggleShowItems} className="btn-toggle-items">
-        {showItems ? 'Hide Items' : 'Show All Items'}
-      </button>
-
-      {/* Display All Items */}
-      {showItems && (
-        <div className="items-list">
-          <h2>All Items</h2>
-          <ul>
-          {items.map(item => (
-  <li key={item.id} className="item">
-    <img src={item.imageUrl} alt={item.text} className="item-image" /> {/* Display item image */}
-    <div className="item-details">
-      <p><strong>College:</strong> {item.college}</p> {/* College */}
-      <p><strong>Category:</strong> {item.category}</p> {/* Category */}
-      <p><strong>Item Name:</strong> {item.text}</p> {/* Item Name */}
-      <p><strong>Barcode:</strong> {item.barcode}</p> {/* Barcode */}
-      <p><strong>Quantity:</strong> {item.quantity}</p> {/* Quantity */}
-      <button onClick={() => navigator.clipboard.writeText(item.barcode)} className="btn-copy-barcode">
-        Copy Barcode
-      </button>
-    </div>
-  </li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <h2>All Items</h2>
+      <ul>
+        {items.map(item => (
+          <li key={item.id}>
+            {item.text} - Barcode: {item.barcode} - Quantity: {item.quantity} - College: {item.college} - Category: {item.category}
+            <svg id={`barcode-${item.id}`}></svg> {/* Barcode image element */}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 };
