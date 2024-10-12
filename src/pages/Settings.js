@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { updateProfile, deleteUser, sendPasswordResetEmail } from 'firebase/auth';
-import { signOut } from 'firebase/auth';
+import { updateProfile, deleteUser, sendPasswordResetEmail, signOut } from 'firebase/auth';
 import { auth } from '../firebase/firebase-config'; // Adjust the import path as needed
 import './Settings.css'; // Ensure you have relevant styles in this file
 import { useNavigate } from 'react-router-dom';
@@ -10,6 +9,8 @@ const Settings = () => {
   const [emailForPasswordReset, setEmailForPasswordReset] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [password, setPassword] = useState(''); // State for password input
+  const [confirmationVisible, setConfirmationVisible] = useState(false); // State to control visibility of confirmation
   const navigate = useNavigate(); // Hook to navigate programmatically
 
   const handleChangeName = async () => {
@@ -35,23 +36,37 @@ const Settings = () => {
   };
 
   const handleDeleteAccount = async () => {
-    if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-      try {
-        // Delete the user account
-        await deleteUser(auth.currentUser);
+    // Replace this with your actual password validation logic
+    const isValidPassword = password === "your-actual-password"; // This is for demonstration
 
-        // Sign out the user
-        await signOut(auth);
+    if (isValidPassword) {
+      if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+        try {
+          // Delete the user account
+          await deleteUser(auth.currentUser);
 
-        // Redirect to the sign-in page
-        navigate('/sign-in');
+          // Sign out the user
+          await signOut(auth);
 
-        // Optionally, you could display a success message or handle further logic here
-      } catch (error) {
-        setError('Error deleting account');
-        setSuccess('');
+          // Redirect to the sign-in page
+          navigate('/sign-in');
+        } catch (error) {
+          setError('Error deleting account');
+          setSuccess('');
+        }
       }
+    } else {
+      alert('Invalid password. Please try again.');
     }
+  };
+
+  const handleShowConfirmation = () => {
+    setConfirmationVisible(true);
+  };
+
+  const handleCancel = () => {
+    setConfirmationVisible(false);
+    setPassword('');
   };
 
   return (
@@ -84,7 +99,20 @@ const Settings = () => {
 
       <div className="setting-section">
         <h3>Delete Account</h3>
-        <button onClick={handleDeleteAccount}>Delete Account</button>
+        <button onClick={handleShowConfirmation}>Delete Account</button>
+        {confirmationVisible && (
+          <div className="confirmation-dialog">
+            <p>Please enter your password to confirm deletion:</p>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter your password"
+            />
+            <button onClick={handleDeleteAccount}>Confirm</button>
+            <button onClick={handleCancel}>Cancel</button>
+          </div>
+        )}
       </div>
     </div>
   );

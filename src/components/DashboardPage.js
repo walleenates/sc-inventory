@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { auth } from '../firebase/firebase-config'; // Adjust the import path as needed
+import { auth } from '../firebase/firebase-config';
 import { collection, onSnapshot, query, where } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
-import { db } from '../firebase/firebase-config'; // Adjust the import path as needed
-import './Dashboard.css'; // Ensure you have relevant styles in this file
+import { db } from '../firebase/firebase-config';
+import './Dashboard.css';
 
 const DashboardPage = () => {
   const [totalItems, setTotalItems] = useState(0);
@@ -13,7 +13,9 @@ const DashboardPage = () => {
   const [selectedCollege, setSelectedCollege] = useState(null);
   const [approvedRequestsCount, setApprovedRequestsCount] = useState({});
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const navigate = useNavigate(); // Hook to programmatically navigate
+  const [loading, setLoading] = useState(true); // Loading state
+  const [error, setError] = useState(null); // Error state
+  const navigate = useNavigate();
   const userName = "Admin"; // Replace with dynamic user data if available
 
   useEffect(() => {
@@ -22,7 +24,6 @@ const DashboardPage = () => {
       const items = snapshot.docs.map(doc => doc.data());
       setTotalItems(items.length);
 
-      // Group items by college and count them
       const collegeMap = items.reduce((acc, item) => {
         if (item.college) {
           acc[item.college] = (acc[item.college] || 0) + 1;
@@ -31,6 +32,10 @@ const DashboardPage = () => {
       }, {});
 
       setCollegeItemCounts(collegeMap);
+      setLoading(false); // Set loading to false after fetching data
+    }, (error) => {
+      setError(error.message); // Handle errors
+      setLoading(false); // Set loading to false in case of error
     });
 
     const requestsCollection = collection(db, 'requests');
@@ -38,13 +43,15 @@ const DashboardPage = () => {
     const unsubscribeRequests = onSnapshot(approvedRequestsQuery, (snapshot) => {
       const requests = snapshot.docs.map(doc => doc.data());
       const collegeMap = requests.reduce((acc, request) => {
-        if (request.college) {
+        if (request.college && typeof request.itemCount === 'number') {
           acc[request.college] = (acc[request.college] || 0) + request.itemCount;
         }
         return acc;
       }, {});
 
       setApprovedRequestsCount(collegeMap);
+    }, (error) => {
+      setError(error.message); // Handle errors
     });
 
     return () => {
@@ -68,16 +75,23 @@ const DashboardPage = () => {
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      navigate('/sign-in'); // Redirect to sign-in page after logout
+      navigate('/sign-in');
     } catch (error) {
       console.error('Error logging out: ', error);
     }
   };
 
-  // Filter colleges based on search term
   const filteredColleges = Object.keys(collegeItemCounts).filter(college =>
     college.toLowerCase().includes(searchTerm)
   );
+
+  if (loading) {
+    return <div>Loading...</div>; // Loading message
+  }
+
+  if (error) {
+    return <div>Error: {error}</div>; // Error message
+  }
 
   return (
     <div className="dashboard">
@@ -99,7 +113,7 @@ const DashboardPage = () => {
             </button>
             {dropdownOpen && (
               <div className="dropdown-menu">
-                <Link to="/account-settings">Account Settings</Link>
+                <Link to="/settings">Account Settings</Link>
                 <button onClick={handleLogout}>Logout</button>
               </div>
             )}
@@ -111,7 +125,7 @@ const DashboardPage = () => {
         <section className="cards">
           <div className="card item-card">
             <h3>ITEMS</h3>
-            <p>Total Items: {totalItems}</p> {/* Display total number of items */}
+            <p>Total Items: {totalItems}</p>
           </div>
           <div className="card folder-card">
             <h3>FOLDER</h3>

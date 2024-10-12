@@ -7,7 +7,7 @@ import emailjs from 'emailjs-com';
 import './ApproveRequest.css';
 
 const categories = ["Equipment", "Office Supplies", "Books", "Electrical Parts"];
-const colleges = ["Engineering", "Business", "Arts", "Sciences"];
+const colleges = ["CCS", "COC", "CED", "CBA", "BED", "COE"]; // Updated college options
 
 const ApproveRequest = () => {
   const [requestDetails, setRequestDetails] = useState({
@@ -17,6 +17,7 @@ const ApproveRequest = () => {
     imageUrl: '',
     category: '',
     uniqueId: '',
+    quantity: 0,
   });
   const [image, setImage] = useState(null);
   const [requests, setRequests] = useState([]);
@@ -99,6 +100,7 @@ const ApproveRequest = () => {
       imageUrl: '',
       category: '',
       uniqueId: '',
+      quantity: 0,
     });
     setImage(null);
     setEditingRequest(null);
@@ -145,6 +147,7 @@ const ApproveRequest = () => {
       imageUrl: request.imageUrl,
       category: request.category,
       uniqueId: request.uniqueId || '',
+      quantity: request.quantity || 0,
     });
     setImage(null);
   };
@@ -207,6 +210,10 @@ const ApproveRequest = () => {
           </select>
         </label>
         <label>
+          Quantity:
+          <input type="number" name="quantity" value={requestDetails.quantity} onChange={handleInputChange} required min="1" />
+        </label>
+        <label>
           Request Date:
           <input type="date" name="requestDate" value={requestDetails.requestDate} onChange={handleInputChange} required />
         </label>
@@ -224,20 +231,23 @@ const ApproveRequest = () => {
       <ul>
         {requests.map((request) => (
           <li key={request.id}>
-            <p>Unique ID: {request.uniqueId}</p>
-            <p>Purpose: {request.itemName}</p>
-            <p>College: {request.college}</p>
-            <p>Category: {request.category}</p>
-            <p>Request Date: {new Date(request.requestDate).toLocaleDateString()}</p>
+            <p><strong>Unique ID:</strong> {request.uniqueId}</p>
+            <p><strong>Purpose:</strong> {request.itemName}</p>
+            <p><strong>College:</strong> {request.college}</p>
+            <p><strong>Category:</strong> {request.category}</p>
+            <p><strong>Quantity:</strong> {request.quantity}</p>
+            <p><strong>Request Date:</strong> {new Date(request.requestDate).toLocaleDateString()}</p>
+            <p><strong>Approval Date:</strong> {request.approvalDate ? new Date(request.approvalDate).toLocaleDateString() : 'Not approved'}</p>
+            {request.imageUrl && <img src={request.imageUrl} alt="Request" className="request-image" />}
             <button onClick={() => handleEdit(request)}>Edit</button>
             <button onClick={() => handleDelete(request.id)}>Delete</button>
             {!request.approved && (
               <div>
                 <label>
-                  Approval Date:
-                  <input type="date" value={approvalDate} onChange={(e) => setApprovalDate(e.target.value)} />
+                  Set Approval Date:
+                  <input type="date" value={approvalDate} onChange={(e) => setApprovalDate(e.target.value)} required />
                 </label>
-                <button onClick={() => handleAddApprovalDate(request.id)}>Set Approval Date</button>
+                <button onClick={() => handleAddApprovalDate(request.id)}>Approve</button>
               </div>
             )}
           </li>
