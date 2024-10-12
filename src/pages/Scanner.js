@@ -17,6 +17,7 @@ const Scanner = () => {
   const webcamRef = useRef(null);
   const codeReader = useRef(new BrowserMultiFormatReader());
 
+  // Fetch items from Firestore
   const fetchItems = async () => {
     const itemsCollection = collection(db, 'items');
     const itemSnapshot = await getDocs(itemsCollection);
@@ -24,10 +25,7 @@ const Scanner = () => {
     setItems(itemList);
   };
 
-  useEffect(() => {
-    fetchItems();
-  }, []);
-
+  // Get camera devices on mount
   useEffect(() => {
     const getDevices = async () => {
       const allDevices = await navigator.mediaDevices.enumerateDevices();
@@ -42,6 +40,12 @@ const Scanner = () => {
     getDevices();
   }, []);
 
+  // Fetch items when component mounts
+  useEffect(() => {
+    fetchItems();
+  }, []);
+
+  // Handle barcode scan and update/delete item based on quantity
   const handleBarcodeScan = useCallback(async (barcode) => {
     const item = items.find(item => item.barcode === barcode);
     if (item) {
@@ -55,12 +59,13 @@ const Scanner = () => {
         await updateDoc(itemDoc, { quantity: updatedQuantity });
         setMessage(`Updated item '${item.text}'. New quantity: ${updatedQuantity}.`);
       }
-      await fetchItems();
+      await fetchItems(); // Refresh the item list
     } else {
       setMessage('Item not found. Please check the barcode and try again.');
     }
   }, [items, quantityInput]);
 
+  // Handle scanning from the camera
   const handleScanFromCamera = useCallback(() => {
     if (webcamRef.current) {
       codeReader.current.decodeFromVideoDevice(selectedDeviceId, webcamRef.current.video, (result, err) => {
@@ -75,6 +80,7 @@ const Scanner = () => {
     }
   }, [selectedDeviceId, handleBarcodeScan]);
 
+  // Start or stop camera scanning
   useEffect(() => {
     if (cameraEnabled) {
       handleScanFromCamera();
@@ -83,6 +89,7 @@ const Scanner = () => {
     }
   }, [cameraEnabled, handleScanFromCamera]);
 
+  // Render barcode for each item
   const renderBarcode = (barcode, elementId) => {
     if (barcode) {
       JsBarcode(`#${elementId}`, barcode, {
@@ -95,17 +102,19 @@ const Scanner = () => {
     }
   };
 
+  // Generate barcodes for items
   useEffect(() => {
     items.forEach(item => {
       renderBarcode(item.barcode, `barcode-${item.id}`);
     });
   }, [items]);
 
+  // Handle barcode submission
   const handleBarcodeSubmit = async (e) => {
     e.preventDefault();
     await handleBarcodeScan(barcodeInput);
-    setBarcodeInput('');
-    setQuantityInput(1);
+    setBarcodeInput(''); // Clear input field
+    setQuantityInput(1); // Reset quantity input
   };
 
   return (
