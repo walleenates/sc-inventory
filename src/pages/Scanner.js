@@ -3,8 +3,9 @@ import { db } from '../firebase/firebase-config';
 import { collection, getDocs, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import Webcam from 'react-webcam';
 import { BrowserMultiFormatReader } from '@zxing/library';
-import JsBarcode from 'jsbarcode'; // Import JsBarcode for generating barcodes
+import JsBarcode from 'jsbarcode';
 import './Scanner.css';
+
 const Scanner = () => {
   const [barcodeInput, setBarcodeInput] = useState('');
   const [quantityInput, setQuantityInput] = useState(1);
@@ -27,65 +28,52 @@ const Scanner = () => {
     fetchItems();
   }, []);
 
-  const getAvailableDevices = async () => {
-    const devices = await navigator.mediaDevices.enumerateDevices();
-    const videoDevices = devices.filter(device => device.kind === 'videoinput');
-    setDevices(videoDevices);
-    if (videoDevices.length > 0) {
-      setSelectedDeviceId(videoDevices[0].deviceId);
-    }
-  };
-
   useEffect(() => {
-    getAvailableDevices();
+    const getDevices = async () => {
+      const allDevices = await navigator.mediaDevices.enumerateDevices();
+      const videoDevices = allDevices.filter(device => device.kind === 'videoinput');
+      setDevices(videoDevices);
+
+      if (videoDevices.length > 0) {
+        setSelectedDeviceId(videoDevices[0].deviceId);
+      }
+    };
+
+    getDevices();
   }, []);
 
-  const handleBarcodeSubmit = async (e) => {
-    e.preventDefault();
-    const item = items.find(item => item.barcode === barcodeInput);
-
+  const handleBarcodeScan = useCallback(async (barcode) => {
+    const item = items.find(item => item.barcode === barcode);
     if (item) {
       const updatedQuantity = item.quantity - quantityInput;
-      if (updatedQuantity < 0) {
-        setMessage('Quantity cannot be less than zero.');
-        return;
-      }
-
       const itemDoc = doc(db, 'items', item.id);
-      await updateDoc(itemDoc, { quantity: updatedQuantity });
 
-      if (updatedQuantity === 0) {
-        await deleteItem(itemDoc);
-        setMessage(`Successfully scanned and deleted item: ${item.text}.`);
+      if (updatedQuantity <= 0) {
+        await deleteDoc(itemDoc);
+        setMessage(`Item '${item.text}' deleted as quantity is now zero.`);
       } else {
-        setMessage(`Successfully scanned item: ${item.text}. Remaining quantity: ${updatedQuantity}`);
+        await updateDoc(itemDoc, { quantity: updatedQuantity });
+        setMessage(`Updated item '${item.text}'. New quantity: ${updatedQuantity}.`);
       }
+      await fetchItems();
     } else {
       setMessage('Item not found. Please check the barcode and try again.');
     }
-
-    setBarcodeInput('');
-    setQuantityInput(1);
-    await fetchItems();
-  };
-
-  const deleteItem = async (itemDoc) => {
-    await deleteDoc(itemDoc);
-  };
+  }, [items, quantityInput]);
 
   const handleScanFromCamera = useCallback(() => {
     if (webcamRef.current) {
       codeReader.current.decodeFromVideoDevice(selectedDeviceId, webcamRef.current.video, (result, err) => {
         if (result) {
-          setBarcodeInput(result.text);
-          setCameraEnabled(false);
+          handleBarcodeScan(result.text);
+          setCameraEnabled(false); // Stop the camera after a successful scan
         }
         if (err) {
-          console.log(err);
+          console.error(err);
         }
       });
     }
-  }, [selectedDeviceId, webcamRef]);
+  }, [selectedDeviceId, handleBarcodeScan]);
 
   useEffect(() => {
     if (cameraEnabled) {
@@ -95,7 +83,6 @@ const Scanner = () => {
     }
   }, [cameraEnabled, handleScanFromCamera]);
 
-  // Function to render barcodes using JsBarcode
   const renderBarcode = (barcode, elementId) => {
     if (barcode) {
       JsBarcode(`#${elementId}`, barcode, {
@@ -113,6 +100,13 @@ const Scanner = () => {
       renderBarcode(item.barcode, `barcode-${item.id}`);
     });
   }, [items]);
+
+  const handleBarcodeSubmit = async (e) => {
+    e.preventDefault();
+    await handleBarcodeScan(barcodeInput);
+    setBarcodeInput('');
+    setQuantityInput(1);
+  };
 
   return (
     <div>
@@ -169,7 +163,7 @@ const Scanner = () => {
         {items.map(item => (
           <li key={item.id}>
             {item.text} - Barcode: {item.barcode} - Quantity: {item.quantity} - College: {item.college} - Category: {item.category}
-            <svg id={`barcode-${item.id}`}></svg> {/* Barcode image element */}
+            <svg id={`barcode-${item.id}`} style={{ cursor: 'pointer' }}></svg>
           </li>
         ))}
       </ul>

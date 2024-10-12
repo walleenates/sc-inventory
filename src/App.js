@@ -8,7 +8,7 @@ import DashboardPage from './components/DashboardPage';
 import ManageItem from './pages/ManageItem';
 import ApproveRequest from './pages/ApproveRequest';
 import Reports from './pages/Reports';
-import Scanner from './pages/Scanner';
+import Scanner from './pages/Scanner';  
 import Settings from './pages/Settings';
 import Layout from './layout/Layout'; // Import the Layout
 
