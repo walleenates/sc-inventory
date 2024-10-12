@@ -93,7 +93,7 @@ const Scanner = () => {
     }
   }, [cameraEnabled, handleScanFromCamera]);
 
-  // Render barcode for each item
+  // Render barcode for each item and return the canvas element
   const renderBarcode = (barcode, elementId) => {
     if (barcode) {
       JsBarcode(`#${elementId}`, barcode, {
@@ -117,6 +117,26 @@ const Scanner = () => {
   const handleBarcodeSubmit = (e) => {
     e.preventDefault();
     setCameraEnabled(true); // Enable the camera for scanning
+  };
+
+  // Function to save barcode image
+  const saveBarcodeImage = (barcode, college) => {
+    const canvas = document.createElement('canvas');
+    JsBarcode(canvas, barcode, {
+      format: "CODE128",
+      lineColor: "#000",
+      width: 2,
+      height: 50,
+      displayValue: false
+    });
+
+    const link = document.createElement('a');
+    link.href = canvas.toDataURL('image/png');
+    link.download = `${college}_barcode_${barcode}.png`; // Filename includes college name
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setMessage(`Saved barcode for ${college}: ${barcode}`);
   };
 
   return (
@@ -156,6 +176,7 @@ const Scanner = () => {
           <li key={item.id}>
             {item.text} - Barcode: {item.barcode} - Quantity: {item.quantity} - College: {item.college} - Category: {item.category}
             <svg id={`barcode-${item.id}`} style={{ cursor: 'pointer' }}></svg>
+            <button onClick={() => saveBarcodeImage(item.barcode, item.college)}>Save Barcode Image</button>
           </li>
         ))}
       </ul>
