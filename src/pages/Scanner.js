@@ -7,12 +7,11 @@ import JsBarcode from 'jsbarcode';
 import './Scanner.css';
 
 const Scanner = () => {
-  const [barcodeInput, setBarcodeInput] = useState('');
   const [quantityInput, setQuantityInput] = useState(1);
   const [items, setItems] = useState([]);
   const [message, setMessage] = useState('');
   const [cameraEnabled, setCameraEnabled] = useState(false);
-  const [devices, setDevices] = useState([]);
+  const [searchMode, setSearchMode] = useState(false); // New state to track search mode
   const [selectedDeviceId, setSelectedDeviceId] = useState('');
   const webcamRef = useRef(null);
   const codeReader = useRef(new BrowserMultiFormatReader());
@@ -30,7 +29,6 @@ const Scanner = () => {
     const getDevices = async () => {
       const allDevices = await navigator.mediaDevices.enumerateDevices();
       const videoDevices = allDevices.filter(device => device.kind === 'videoinput');
-      setDevices(videoDevices);
 
       if (videoDevices.length > 0) {
         setSelectedDeviceId(videoDevices[0].deviceId);
@@ -45,32 +43,38 @@ const Scanner = () => {
     fetchItems();
   }, []);
 
-  // Handle barcode scan and update/delete item based on quantity
+  // Handle barcode scan to update/delete or search item based on quantity
   const handleBarcodeScan = useCallback(async (barcode) => {
     const item = items.find(item => item.barcode === barcode);
     if (item) {
-      const updatedQuantity = item.quantity - quantityInput;
-      const itemDoc = doc(db, 'items', item.id);
-
-      if (updatedQuantity <= 0) {
-        await deleteDoc(itemDoc);
-        setMessage(`Item '${item.text}' deleted as quantity is now zero.`);
+      if (searchMode) {
+        // Display message if in search mode
+        setMessage(`Found item: '${item.text}' - Quantity: ${item.quantity}`);
       } else {
-        await updateDoc(itemDoc, { quantity: updatedQuantity });
-        setMessage(`Updated item '${item.text}'. New quantity: ${updatedQuantity}.`);
+        // Handle update/delete logic
+        const updatedQuantity = item.quantity - quantityInput;
+        const itemDoc = doc(db, 'items', item.id);
+
+        if (updatedQuantity <= 0) {
+          await deleteDoc(itemDoc);
+          setMessage(`Item '${item.text}' deleted as quantity is now zero.`);
+        } else {
+          await updateDoc(itemDoc, { quantity: updatedQuantity });
+          setMessage(`Updated item '${item.text}'. New quantity: ${updatedQuantity}.`);
+        }
+        await fetchItems(); // Refresh the item list
       }
-      await fetchItems(); // Refresh the item list
     } else {
       setMessage('Item not found. Please check the barcode and try again.');
     }
-  }, [items, quantityInput]);
+  }, [items, quantityInput, searchMode]);
 
-  // Handle scanning from the camera
+  // Handle scanning from the camera for updating/deleting or searching for items
   const handleScanFromCamera = useCallback(() => {
     if (webcamRef.current) {
       codeReader.current.decodeFromVideoDevice(selectedDeviceId, webcamRef.current.video, (result, err) => {
         if (result) {
-          handleBarcodeScan(result.text);
+          handleBarcodeScan(result.text); // Search or update/delete item based on mode
           setCameraEnabled(false); // Stop the camera after a successful scan
         }
         if (err) {
@@ -109,25 +113,16 @@ const Scanner = () => {
     });
   }, [items]);
 
-  // Handle barcode submission
-  const handleBarcodeSubmit = async (e) => {
+  // Handle barcode submission for update/delete
+  const handleBarcodeSubmit = (e) => {
     e.preventDefault();
-    await handleBarcodeScan(barcodeInput);
-    setBarcodeInput(''); // Clear input field
-    setQuantityInput(1); // Reset quantity input
+    setCameraEnabled(true); // Enable the camera for scanning
   };
 
   return (
     <div>
       <h1>Scanner</h1>
       <form onSubmit={handleBarcodeSubmit}>
-        <input
-          type="text"
-          value={barcodeInput}
-          onChange={(e) => setBarcodeInput(e.target.value)}
-          placeholder="Enter barcode"
-          required
-        />
         <input
           type="number"
           value={quantityInput}
@@ -136,34 +131,22 @@ const Scanner = () => {
           min="1"
           required
         />
-        <button type="submit">Submit</button>
+        <button type="submit">Update/Delete Item</button>
       </form>
 
-      {message && <p className="message">{message}</p>}
-
-      <button onClick={() => setCameraEnabled(!cameraEnabled)}>
-        {cameraEnabled ? 'Stop Camera' : 'Scan Barcode with Camera'}
+      <button onClick={() => {
+        setSearchMode(true); // Set search mode
+        setCameraEnabled(true); // Enable the camera for scanning
+      }}>
+        Search Item through Scan
       </button>
 
-      {devices.length > 0 && (
-        <div>
-          <label>Select Camera: </label>
-          <select
-            value={selectedDeviceId}
-            onChange={(e) => setSelectedDeviceId(e.target.value)}
-          >
-            {devices.map(device => (
-              <option key={device.deviceId} value={device.deviceId}>
-                {device.label || `Camera ${device.deviceId}`}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
+      {message && <p className="message">{message}</p>}
 
       {cameraEnabled && (
         <div>
           <Webcam ref={webcamRef} width="300" height="200" videoConstraints={{ deviceId: selectedDeviceId }} />
+          <button onClick={() => setCameraEnabled(false)}>Stop Camera</button>
         </div>
       )}
 
