@@ -119,9 +119,18 @@ const Scanner = () => {
     setCameraEnabled(true); // Enable the camera for scanning
   };
 
-  // Function to save barcode image
+  // Function to save barcode image with college name
   const saveBarcodeImage = (barcode, college) => {
     const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    // Set canvas dimensions
+    const canvasWidth = 200;
+    const canvasHeight = 100;
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
+
+    // Generate barcode
     JsBarcode(canvas, barcode, {
       format: "CODE128",
       lineColor: "#000",
@@ -130,6 +139,13 @@ const Scanner = () => {
       displayValue: false
     });
 
+    // Draw college name on the canvas
+    ctx.font = "10px Arial"; // Set smaller font size
+    ctx.fillStyle = "black";
+    ctx.textAlign = "center";
+    ctx.fillText(college, canvasWidth / 2, canvasHeight - 10); // Draw college name below barcode
+
+    // Create a download link for the image
     const link = document.createElement('a');
     link.href = canvas.toDataURL('image/png');
     link.download = `${college}_barcode_${barcode}.png`; // Filename includes college name
