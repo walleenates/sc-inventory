@@ -52,6 +52,7 @@ const Scanner = () => {
       if (searchMode) {
         setSearchedItem(item); // Set the found item details for display
         setMessage(`Found item: '${item.text}' - Quantity: ${item.quantity}`);
+        setCameraEnabled(false); // Automatically close the camera after a successful search
       } else {
         const updatedQuantity = item.quantity - quantityInput;
         const itemDoc = doc(db, 'items', item.id);
