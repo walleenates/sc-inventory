@@ -11,8 +11,9 @@ const Scanner = () => {
   const [items, setItems] = useState([]);
   const [message, setMessage] = useState('');
   const [cameraEnabled, setCameraEnabled] = useState(false);
-  const [searchMode, setSearchMode] = useState(false); // New state to track search mode
+  const [searchMode, setSearchMode] = useState(false);
   const [selectedDeviceId, setSelectedDeviceId] = useState('');
+  const [videoDevices, setVideoDevices] = useState([]); // State for video devices
   const webcamRef = useRef(null);
   const codeReader = useRef(new BrowserMultiFormatReader());
 
@@ -29,9 +30,9 @@ const Scanner = () => {
     const getDevices = async () => {
       const allDevices = await navigator.mediaDevices.enumerateDevices();
       const videoDevices = allDevices.filter(device => device.kind === 'videoinput');
-
+      setVideoDevices(videoDevices); // Set video devices
       if (videoDevices.length > 0) {
-        setSelectedDeviceId(videoDevices[0].deviceId);
+        setSelectedDeviceId(videoDevices[0].deviceId); // Default to first device
       }
     };
 
@@ -48,10 +49,8 @@ const Scanner = () => {
     const item = items.find(item => item.barcode === barcode);
     if (item) {
       if (searchMode) {
-        // Display message if in search mode
         setMessage(`Found item: '${item.text}' - Quantity: ${item.quantity}`);
       } else {
-        // Handle update/delete logic
         const updatedQuantity = item.quantity - quantityInput;
         const itemDoc = doc(db, 'items', item.id);
 
@@ -74,7 +73,7 @@ const Scanner = () => {
     if (webcamRef.current) {
       codeReader.current.decodeFromVideoDevice(selectedDeviceId, webcamRef.current.video, (result, err) => {
         if (result) {
-          handleBarcodeScan(result.text); // Search or update/delete item based on mode
+          handleBarcodeScan(result.text);
           setCameraEnabled(false); // Stop the camera after a successful scan
         }
         if (err) {
@@ -123,8 +122,6 @@ const Scanner = () => {
   const saveBarcodeImage = (barcode, college) => {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
-
-    // Set canvas dimensions
     const canvasWidth = 200;
     const canvasHeight = 100;
     canvas.width = canvasWidth;
@@ -140,15 +137,14 @@ const Scanner = () => {
     });
 
     // Draw college name on the canvas
-    ctx.font = "10px Arial"; // Set smaller font size
+    ctx.font = "10px Arial";
     ctx.fillStyle = "black";
     ctx.textAlign = "center";
-    ctx.fillText(college, canvasWidth / 2, canvasHeight - 10); // Draw college name below barcode
+    ctx.fillText(college, canvasWidth / 2, canvasHeight - 10);
 
-    // Create a download link for the image
     const link = document.createElement('a');
     link.href = canvas.toDataURL('image/png');
-    link.download = `${college}_barcode_${barcode}.png`; // Filename includes college name
+    link.download = `${college}_barcode_${barcode}.png`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -171,13 +167,28 @@ const Scanner = () => {
       </form>
 
       <button onClick={() => {
-        setSearchMode(true); // Set search mode
-        setCameraEnabled(true); // Enable the camera for scanning
+        setSearchMode(true);
+        setCameraEnabled(true);
       }}>
         Search Item through Scan
       </button>
 
       {message && <p className="message">{message}</p>}
+
+      <div>
+        <label htmlFor="cameraSelect">Select Camera:</label>
+        <select
+          id="cameraSelect"
+          value={selectedDeviceId}
+          onChange={(e) => setSelectedDeviceId(e.target.value)}
+        >
+          {videoDevices.map(device => (
+            <option key={device.deviceId} value={device.deviceId}>
+              {device.label || `Camera ${device.deviceId}`}
+            </option>
+          ))}
+        </select>
+      </div>
 
       {cameraEnabled && (
         <div>
