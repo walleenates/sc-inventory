@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { updateProfile, deleteUser, sendPasswordResetEmail, signOut } from 'firebase/auth';
 import { auth } from '../firebase/firebase-config'; // Adjust the import path as needed
-import './Settings.css'; // Ensure you have relevant styles in this file
 import { useNavigate } from 'react-router-dom';
+import emailjs from 'emailjs-com'; // Import EmailJS
+import './Settings.css';
 
 const Settings = () => {
   const [newName, setNewName] = useState('');
@@ -42,6 +43,12 @@ const Settings = () => {
     if (isValidPassword) {
       if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
         try {
+          // Send notification email
+          await emailjs.send("service_qyi761q", "template_y26mfw8", {
+            user_email: auth.currentUser.email, // Send the user's email
+            message: "Your account has been deleted successfully."
+          }, "dXV00-Wj5L1tjyQCC");
+
           // Delete the user account
           await deleteUser(auth.currentUser);
 
