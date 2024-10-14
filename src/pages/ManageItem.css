@@ -1,134 +1,76 @@
-/* src/pages/ManageItem.css */
 .manage-item-container {
-  font-family: Arial, sans-serif;
+  max-width: 1000px;
+  margin: 0 auto;
   padding: 20px;
 }
 
-h1 {
-  font-size: 24px;
-  color: #333;
-}
-
-.add-item,
-.edit-item {
-  margin-bottom: 20px;
-}
-
-.add-item label,
-.edit-item label {
+.add-item, .edit-item {
+  margin: 20px 0;
   display: flex;
-  flex-direction: column;
-  gap: 5px;
-  margin-bottom: 10px; /* Space between label and input */
-}
-
-.add-item input,
-.add-item select,
-.add-item button,
-.edit-item input,
-.edit-item select,
-.edit-item button {
-  padding: 8px;
-  border-radius: 5px;
-  border: 1px solid #ccc;
-}
-
-.add-item button,
-.edit-item button {
-  background-color: #007bff;
-  color: white;
-  border: none;
-  cursor: pointer;
-  font-size: 16px;
-}
-
-.add-item button:hover,
-.edit-item button:hover {
-  background-color: #0056b3;
-}
-
-.item-list {
-  list-style-type: none;
-  padding: 0;
-}
-
-.item {
-  border: 1px solid #ddd;
-  padding: 10px;
-  margin-bottom: 10px;
-  border-radius: 5px;
-  background-color: #f9f9f9;
-  display: flex;
-  align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
 }
 
-.item img {
-  max-width: 100px;
-  height: auto;
-  display: block;
-}
-
-.item-details {
+.add-item input, .add-item select, .edit-item input, .edit-item select {
   flex: 1;
+  min-width: 150px;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
 }
 
-.edit-item-button,
-.delete-item-button {
-  padding: 5px 10px;
+.add-item button, .edit-item button {
+  padding: 8px 12px;
+  background-color: #4CAF50;
+  color: white;
   border: none;
-  border-radius: 5px;
+  border-radius: 4px;
   cursor: pointer;
 }
 
-.edit-item-button {
-  background-color: #28a745;
-  color: white;
+.add-item button:hover, .edit-item button:hover {
+  background-color: #45a049;
 }
 
-.edit-item-button:hover {
-  background-color: #218838;
+.item-list table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
 }
 
-.delete-item-button {
-  background-color: #dc3545;
-  color: white;
+.item-list th, .item-list td {
+  padding: 8px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
 }
 
-.delete-item-button:hover {
-  background-color: #c82333;
+.item-list th {
+  background-color: #f4f4f4;
 }
 
-.error-message {
-  color: red;
+.item-list tr:hover {
+  background-color: #f5f5f5;
+}
+
+.college-section {
+  margin-bottom: 20px;
+}
+
+.college-header {
+  font-size: 1.2em;
   font-weight: bold;
+  cursor: pointer;
+  background-color: #ececec;
+  padding: 8px;
 }
 
-.college-icon {
-  width: 24px;
-  height: 24px;
-  margin-right: 8px;
-}
-.item-details-modal {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background-color: white;
-  border: 1px solid #ccc;
-  padding: 20px;
-  z-index: 1000;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+img {
+  max-width: 50px;
+  max-height: 50px;
 }
 
-.item-details-modal h2 {
-  margin: 0 0 10px 0;
-}
-
-.item-details-modal p {
-  margin: 5px 0;
-}
-
-.item-details-modal button {
-  margin-top: 10px;
+@media (max-width: 768px) {
+  .add-item, .edit-item {
+    flex-direction: column;
+  }
 }

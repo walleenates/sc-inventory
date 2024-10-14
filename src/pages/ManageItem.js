@@ -246,39 +246,66 @@ const ManageItem = () => {
             <option value="local">Save Locally</option>
             <option value="system">Save to System</option>
           </select>
+          <button onClick={() => setIsCameraOpen(true)}>Capture Image</button>
         </div>
+        {isCameraOpen && <Camera onCapture={handleCameraCapture} />}
         <button onClick={handleAddItem}>Add Item</button>
       </div>
-      <h2>Existing Items</h2>
-      {Object.keys(groupedItems).map((college) => (
-        <div key={college}>
-          <h3 onClick={() => toggleFolderVisibility(college)}>{college} (Total Quantity: {groupedItems[college].totalQuantity})</h3>
-          {visibleColleges[college] && (
-            <div>
-              {groupedItems[college].items.map((item) => (
-                <div key={item.id} className="item">
-                  <Barcode value={item.barcode} />
-                  <div>{item.text}</div>
-                  <div>Quantity: {item.quantity}</div>
-                  <div>Amount: ${item.amount}</div>
-                  <div>Requested Date: {item.requestedDate.toDate().toLocaleDateString()}</div>
-                  <div>Supplier: {item.supplier}</div>
-                  <div>Item Type: {item.itemType}</div>
-                  {item.image && <img src={item.image} alt="Uploaded" />}
-                  <button onClick={() => handleEditItem(item)}>Edit</button>
-                  <button onClick={() => handleDeleteItem(item.id)}>Delete</button>
-                </div>
-              ))}
+
+      <div className="item-list">
+        {Object.entries(groupedItems).map(([college, { items, totalQuantity }]) => (
+          <div key={college} className="college-section">
+            <div className="college-header" onClick={() => toggleFolderVisibility(college)}>
+              {college} - Total Quantity: {totalQuantity}
             </div>
-          )}
-        </div>
-      ))}
+            {visibleColleges[college] && (
+              <table>
+                <thead>
+                  <tr>
+                    <th>Item Name</th>
+                    <th>College</th>
+                    <th>Quantity</th>
+                    <th>Amount</th>
+                    <th>Requested Date</th>
+                    <th>Supplier</th>
+                    <th>Type</th>
+                    <th>Image</th>
+                    <th>Barcode</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((item) => (
+                    <tr key={item.id}>
+                      <td>{item.text}</td>
+                      <td>{item.college}</td>
+                      <td>{item.quantity}</td>
+                      <td>{item.amount}</td>
+                      <td>{item.requestedDate.toDate().toLocaleDateString()}</td>
+                      <td>{item.supplier}</td>
+                      <td>{item.itemType}</td>
+                      <td>
+                        {item.image && <img src={item.image} alt="Item" width="50" />}
+                      </td>
+                      <td><Barcode value={item.barcode} /></td>
+                      <td>
+                        <button onClick={() => handleEditItem(item)}>Edit</button>
+                        <button onClick={() => handleDeleteItem(item.id)}>Delete</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        ))}
+      </div>
+
       {editItem && (
         <div className="edit-item">
           <h2>Edit Item</h2>
           <input type="text" value={editValue} onChange={(e) => setEditValue(e.target.value)} />
           <select value={editCollege} onChange={(e) => setEditCollege(e.target.value)}>
-            <option value="">Select College</option>
             {colleges.map((college) => (
               <option key={college} value={college}>{college}</option>
             ))}
@@ -292,11 +319,8 @@ const ManageItem = () => {
           </select>
           <input type="file" onChange={handleImageUpload} />
           <button onClick={handleSaveEdit}>Save</button>
-          <button onClick={clearEditFields}>Cancel</button>
         </div>
       )}
-      {isCameraOpen && <Camera onCapture={handleCameraCapture} />}
-      <button onClick={() => setIsCameraOpen(true)}>Open Camera</button>
     </div>
   );
 };

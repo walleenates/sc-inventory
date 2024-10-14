@@ -228,31 +228,50 @@ const ApproveRequest = () => {
       {isCameraOpen && <Camera onCapture={handleImageCapture} />}
 
       <h2>Submitted Requests</h2>
-      <ul>
-        {requests.map((request) => (
-          <li key={request.id}>
-            <p><strong>Unique ID:</strong> {request.uniqueId}</p>
-            <p><strong>Purpose:</strong> {request.itemName}</p>
-            <p><strong>College:</strong> {request.college}</p>
-            <p><strong>Category:</strong> {request.category}</p>
-            <p><strong>Quantity:</strong> {request.quantity}</p>
-            <p><strong>Request Date:</strong> {new Date(request.requestDate).toLocaleDateString()}</p>
-            <p><strong>Approval Date:</strong> {request.approvalDate ? new Date(request.approvalDate).toLocaleDateString() : 'Not approved'}</p>
-            {request.imageUrl && <img src={request.imageUrl} alt="Request" className="request-image" />}
-            <button onClick={() => handleEdit(request)}>Edit</button>
-            <button onClick={() => handleDelete(request.id)}>Delete</button>
-            {!request.approved && (
-              <div>
-                <label>
-                  Set Approval Date:
-                  <input type="date" value={approvalDate} onChange={(e) => setApprovalDate(e.target.value)} required />
-                </label>
-                <button onClick={() => handleAddApprovalDate(request.id)}>Approve</button>
-              </div>
-            )}
-          </li>
-        ))}
-      </ul>
+<table className="submitted-requests">
+  <thead>
+    <tr>
+      <th>Unique ID</th>
+      <th>Purpose</th>
+      <th>College</th>
+      <th>Category</th>
+      <th>Quantity</th>
+      <th>Request Date</th>
+      <th>Approval Date</th>
+      <th>Image</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {requests.map((request) => (
+      <tr key={request.id}>
+        <td>{request.uniqueId}</td>
+        <td>{request.itemName}</td>
+        <td>{request.college}</td>
+        <td>{request.category}</td>
+        <td>{request.quantity}</td>
+        <td>{new Date(request.requestDate).toLocaleDateString()}</td>
+        <td>{request.approvalDate ? new Date(request.approvalDate).toLocaleDateString() : 'Not approved'}</td>
+        <td>
+          {request.imageUrl && <img src={request.imageUrl} alt="Request" />}
+        </td>
+        <td>
+          <button onClick={() => handleEdit(request)}>Edit</button>
+          <button onClick={() => handleDelete(request.id)}>Delete</button>
+          {!request.approved && (
+            <>
+              <label>
+                <input type="date" value={approvalDate} onChange={(e) => setApprovalDate(e.target.value)} required />
+              </label>
+              <button onClick={() => handleAddApprovalDate(request.id)}>Approve</button>
+            </>
+          )}
+        </td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
     </div>
   );
 };
