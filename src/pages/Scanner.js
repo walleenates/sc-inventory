@@ -13,7 +13,8 @@ const Scanner = () => {
   const [cameraEnabled, setCameraEnabled] = useState(false);
   const [searchMode, setSearchMode] = useState(false);
   const [selectedDeviceId, setSelectedDeviceId] = useState('');
-  const [videoDevices, setVideoDevices] = useState([]); // State for video devices
+  const [videoDevices, setVideoDevices] = useState([]);
+  const [searchedItem, setSearchedItem] = useState(null); // State to hold the searched item details
   const webcamRef = useRef(null);
   const codeReader = useRef(new BrowserMultiFormatReader());
 
@@ -30,9 +31,9 @@ const Scanner = () => {
     const getDevices = async () => {
       const allDevices = await navigator.mediaDevices.enumerateDevices();
       const videoDevices = allDevices.filter(device => device.kind === 'videoinput');
-      setVideoDevices(videoDevices); // Set video devices
+      setVideoDevices(videoDevices);
       if (videoDevices.length > 0) {
-        setSelectedDeviceId(videoDevices[0].deviceId); // Default to first device
+        setSelectedDeviceId(videoDevices[0].deviceId); // Default to the first device
       }
     };
 
@@ -49,6 +50,7 @@ const Scanner = () => {
     const item = items.find(item => item.barcode === barcode);
     if (item) {
       if (searchMode) {
+        setSearchedItem(item); // Set the found item details for display
         setMessage(`Found item: '${item.text}' - Quantity: ${item.quantity}`);
       } else {
         const updatedQuantity = item.quantity - quantityInput;
@@ -65,6 +67,7 @@ const Scanner = () => {
       }
     } else {
       setMessage('Item not found. Please check the barcode and try again.');
+      setSearchedItem(null); // Reset the searched item if not found
     }
   }, [items, quantityInput, searchMode]);
 
@@ -74,14 +77,14 @@ const Scanner = () => {
       codeReader.current.decodeFromVideoDevice(selectedDeviceId, webcamRef.current.video, (result, err) => {
         if (result) {
           handleBarcodeScan(result.text);
-          setCameraEnabled(false); // Stop the camera after a successful scan
+          if (!searchMode) setCameraEnabled(false); // Stop the camera if not in search mode
         }
         if (err) {
           console.error(err);
         }
       });
     }
-  }, [selectedDeviceId, handleBarcodeScan]);
+  }, [selectedDeviceId, handleBarcodeScan, searchMode]);
 
   // Start or stop camera scanning
   useEffect(() => {
@@ -174,6 +177,17 @@ const Scanner = () => {
       </button>
 
       {message && <p className="message">{message}</p>}
+
+      {searchedItem && (
+        <div className="searched-item">
+          <h2>Searched Item Details:</h2>
+          <p><strong>Name:</strong> {searchedItem.text}</p>
+          <p><strong>Barcode:</strong> {searchedItem.barcode}</p>
+          <p><strong>Quantity:</strong> {searchedItem.quantity}</p>
+          <p><strong>College:</strong> {searchedItem.college}</p>
+          <p><strong>Category:</strong> {searchedItem.category}</p>
+        </div>
+      )}
 
       <div>
         <label htmlFor="cameraSelect">Select Camera:</label>
