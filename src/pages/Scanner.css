@@ -48,7 +48,7 @@ button {
 }
 
 button:hover {
-  background-color: #0056b3;
+  background-color: #850b0c;
 }
 
 .message {
@@ -73,6 +73,8 @@ li {
 img {
   display: block;
   margin-top: 10px;
+  width: 50px;
+  height: 50px;
 }
 
 select {

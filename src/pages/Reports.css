@@ -89,7 +89,7 @@ h3 {
 }
 
 .toggle-button:hover {
-  color: #660809; /* Darker red on hover */
+  color: #ffffff; /* Darker red on hover */
 }
 
 /* List styling */
@@ -138,7 +138,7 @@ li {
 }
 
 .action-button {
-  background-color: #007bff; /* Blue background for buttons */
+  background-color: #660809; /* Blue background for buttons */
   color: white; /* White text color */
   border: none; /* No border */
   border-radius: 4px; /* Rounded corners */
@@ -149,5 +149,5 @@ li {
 }
 
 .action-button:hover {
-  background-color: #0056b3; /* Darker blue on hover */
+  background-color: #850b0c; /* Darker blue on hover */
 }

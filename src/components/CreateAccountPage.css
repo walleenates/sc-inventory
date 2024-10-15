@@ -29,7 +29,7 @@
 .create-account-container button {
   margin-top: 10px;
   padding: 10px;
-  background-color: #007bff;
+  background-color: #a30101d4 ;
   color: white;
   border: none;
   border-radius: 5px;
@@ -37,7 +37,7 @@
 }
 
 .create-account-container .back-button {
-  background-color: #6c757d;
+  background-color: #a72e2e;
 }
 
 .create-account-container .error {

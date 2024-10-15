@@ -167,7 +167,7 @@ const Scanner = () => {
           min="1"
           required
         />
-        <button type="submit">Get Item</button>
+        <button type="submit-scanner">Get Item</button>
       </form>
 
       <button onClick={() => {

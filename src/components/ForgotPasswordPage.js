@@ -40,7 +40,7 @@ const ForgotPasswordPage = () => {
         {error && <p className="error">{error}</p>}
         {success && <p className="success">{success}</p>}
       </form>
-      <button onClick={() => navigate('/')} className="back-button">Back to Sign In</button>
+      <button onClick={() => navigate('/')} className="forgotpasswordback-button">Back to Sign In</button>
     </div>
   );
 };
