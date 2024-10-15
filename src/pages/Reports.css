@@ -107,10 +107,12 @@ li {
 
 /* Report image styling */
 .report-image {
-  max-width: 100%; /* Responsive image */
-  height: auto; /* Maintain aspect ratio */
-  margin-top: 10px; /* Space above the image */
+  width: 100px;
+  height: auto;
+  margin-top: 10px;
+  border-radius: 4px;
 }
+
 
 /* Responsive design */
 @media (max-width: 600px) {

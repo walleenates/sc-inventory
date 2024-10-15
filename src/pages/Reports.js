@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '../firebase/firebase-config';
-import './Reports.css'; // Ensure to create a CSS file for styling
-import { FaFolder } from 'react-icons/fa'; // Importing folder icon from react-icons
+import './Reports.css';
+import { FaFolder } from 'react-icons/fa';
 
 const Reports = () => {
   const [items, setItems] = useState([]);
-  const [groupBy, setGroupBy] = useState('college'); // Default grouping by college
-  const [searchQuery, setSearchQuery] = useState(''); // State for search query
-  const [visibleGroups, setVisibleGroups] = useState({}); // State for managing visible groups
+  const [groupBy, setGroupBy] = useState('college');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [visibleGroups, setVisibleGroups] = useState({});
 
   useEffect(() => {
     const fetchItems = async () => {
@@ -66,29 +66,24 @@ const Reports = () => {
     }));
   };
 
-  // Function to download report summary as a Word document
   const downloadReport = (college) => {
     const reportSummary = generateReportSummary(college);
     const blob = new Blob([reportSummary], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${college}-report-summary.docx`; // Change file extension to .docx
+    a.download = `${college}-report-summary.docx`;
     a.click();
-    URL.revokeObjectURL(url); // Free up memory
+    URL.revokeObjectURL(url);
   };
 
-  // Function to generate report summary
   const generateReportSummary = (college) => {
     const groupedItems = groupItems();
     let summary = `<h2>Report Summary for ${college}</h2><br/>`;
 
-    // Check if groupedItems has the college key
     if (groupedItems.hasOwnProperty(college)) {
       for (const category in groupedItems[college]) {
         summary += `<h3>Category: ${category}</h3><ul>`;
-        
-        // Generate item details for this category
         summary += generateItemsSummary(groupedItems[college][category]);
         summary += '</ul>';
       }
@@ -99,7 +94,6 @@ const Reports = () => {
     return summary;
   };
 
-  // Helper function to generate summary for items in a category
   const generateItemsSummary = (items) => {
     return items.map(item => `
       <li>
@@ -166,7 +160,6 @@ const Reports = () => {
               )}
             </div>
           ))}
-
         </div>
       ))}
     </div>
