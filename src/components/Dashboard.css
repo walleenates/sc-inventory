@@ -62,6 +62,7 @@ h2 {
   border: none;
   cursor: pointer;
   font-size: 14px;
+  color: rgb(0, 0, 0);
 }
 
 /* Dropdown Menu Styles */
