@@ -78,14 +78,13 @@ const Scanner = () => {
       codeReader.current.decodeFromVideoDevice(selectedDeviceId, webcamRef.current.video, (result, err) => {
         if (result) {
           handleBarcodeScan(result.text);
-          if (!searchMode) setCameraEnabled(false); // Stop the camera if not in search mode
         }
         if (err) {
           console.error(err);
         }
       });
     }
-  }, [selectedDeviceId, handleBarcodeScan, searchMode]);
+  }, [selectedDeviceId, handleBarcodeScan]);
 
   // Start or stop camera scanning
   useEffect(() => {
@@ -167,7 +166,7 @@ const Scanner = () => {
           min="1"
           required
         />
-        <button type="submit-scanner">Get Item</button>
+        <button type="submit">Get Item</button>
       </form>
 
       <button onClick={() => {
